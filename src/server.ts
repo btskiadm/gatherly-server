@@ -1,36 +1,55 @@
 import Fastify from "fastify";
 import mercurius from "mercurius";
+import { pinoOptions } from "./server/pino";
 
-// Sample GraphQL schema and resolver
-const schema = `
+const createServer = () => {
+  const schema = `
   type Query {
     hello: String
   }
 `;
 
-const resolvers = {
-  Query: {
-    hello: () => "Hello, Fastify with GraphQL!",
-  },
-};
+  const resolvers = {
+    Query: {
+      hello: () => "Hello, Fastify with GraphQL!",
+    },
+  };
 
-async function startServer() {
-  const fastify = Fastify({ logger: true });
+  const fastify = Fastify({
+    ignoreTrailingSlash: true,
+    requestIdHeader: false,
+    maxParamLength: 256,
+    logger: {
+      ...pinoOptions["development"],
+      formatters: {
+        level(level) {
+          return { level };
+        },
+      },
+    },
+  });
 
-  // Register GraphQL
   fastify.register(mercurius, {
     schema,
     resolvers,
     graphiql: true,
   });
 
-  try {
-    await fastify.listen({ port: 3000 });
-    console.log("🚀 Server is running at http://localhost:3000");
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-}
+  return {
+    start: async () => {
+      try {
+        await fastify.listen({ port: 3000 });
+        console.log("🚀 Server is running at http://localhost:3000");
+      } catch (err) {
+        fastify.log.error(err);
+        process.exit(1);
+      }
+    },
+  };
+};
 
-startServer();
+(async function initialize() {
+  const server = createServer();
+
+  await server.start();
+})();
