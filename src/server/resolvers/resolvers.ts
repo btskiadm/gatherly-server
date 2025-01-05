@@ -1,10 +1,14 @@
+import { loadFilesSync } from "@graphql-tools/load-files";
 import { mergeResolvers } from "@graphql-tools/merge";
 import { composeResolvers, ResolversComposition } from "@graphql-tools/resolvers-composition";
-import { healthCheckResolver } from "./healthCheck.resolver";
+import path from "path";
+
+type Resolvers = any;
+
+const loadedResolvers: Resolvers = loadFilesSync(path.join(__dirname, "./**/*.resolvers.*"));
 
 const isAuthenticated = (): ResolversComposition => (next) => (root, args, context, info) => {
   if (!context.currentUser) {
-    // throw new Error("You are not authenticated!");
   }
 
   return next(root, args, context, info);
@@ -22,6 +26,6 @@ const hasRole =
   };
 
 //  https://the-guild.dev/graphql/tools/docs/resolvers-composition
-export const resolvers = composeResolvers(mergeResolvers([healthCheckResolver]), {
+export const resolvers = composeResolvers(mergeResolvers([loadedResolvers]), {
   "Query.healthCheck": [isAuthenticated(), hasRole("EDITOR")],
 });
