@@ -1,4 +1,5 @@
 import type { LoggerOptions } from "pino";
+import { NodeEnv } from "../utils/env";
 
 const hasPrettyFlag = process.argv.includes("--pretty");
 
@@ -10,7 +11,7 @@ const transportOptions: LoggerOptions["transport"] = {
   },
 };
 
-export const pinoOptions: Record<"development" | "production", LoggerOptions> = {
+export const pinoOptions: Record<NodeEnv, LoggerOptions> = {
   development: {
     level: "debug",
     transport: transportOptions,
@@ -19,4 +20,5 @@ export const pinoOptions: Record<"development" | "production", LoggerOptions> = 
     level: "info",
     transport: hasPrettyFlag ? transportOptions : undefined,
   },
+  test: {},
 };

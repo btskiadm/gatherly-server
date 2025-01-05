@@ -16,8 +16,8 @@ export function invariant(
   if (condition) {
     return;
   }
-  // Condition not passed
 
+  // Condition not passed
   const provided: string | undefined = typeof message === "function" ? message() : message;
 
   // Options:
