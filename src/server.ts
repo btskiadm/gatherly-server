@@ -1,20 +1,15 @@
+import { makeExecutableSchema } from "@graphql-tools/schema";
+import dotenv from "dotenv";
 import Fastify from "fastify";
-import mercurius from "mercurius";
+import mercurius, { defaultErrorFormatter } from "mercurius";
 import { pinoOptions } from "./server/pino";
+import { resolvers } from "./server/resolvers/resolvers";
+import { typeDefs } from "./server/typeDefs/typeDefs";
+import { buildContext } from "./server/types/mercurius";
+
+dotenv.config();
 
 const createServer = () => {
-  const schema = `
-  type Query {
-    hello: String
-  }
-`;
-
-  const resolvers = {
-    Query: {
-      hello: () => "Hello, Fastify with GraphQL!",
-    },
-  };
-
   const fastify = Fastify({
     ignoreTrailingSlash: true,
     requestIdHeader: false,
@@ -30,9 +25,20 @@ const createServer = () => {
   });
 
   fastify.register(mercurius, {
-    schema,
-    resolvers,
     graphiql: true,
+    schema: makeExecutableSchema({
+      typeDefs: typeDefs,
+      resolvers: resolvers,
+    }),
+    errorFormatter(execution, context) {
+      const formatter = defaultErrorFormatter(execution, context);
+
+      return {
+        statusCode: formatter.statusCode || 500,
+        response: formatter.response,
+      };
+    },
+    context: buildContext,
   });
 
   return {
