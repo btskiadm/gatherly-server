@@ -27,5 +27,5 @@ const hasRole =
 
 //  https://the-guild.dev/graphql/tools/docs/resolvers-composition
 export const resolvers = composeResolvers(mergeResolvers([loadedResolvers]), {
-  "Query.healthCheck": [isAuthenticated(), hasRole("EDITOR")],
+  // "Query.healthCheck": [isAuthenticated(), hasRole("EDITOR")],
 });
