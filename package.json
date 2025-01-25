@@ -5,7 +5,7 @@
   "main": "src/server.ts",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc & cp src/typeDefs/*.graphql dist/typeDefs/",
     "start": "node dist/server.js"
   },
   "dependencies": {
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.10",
+    "@types/ws": "^8.5.14",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   },

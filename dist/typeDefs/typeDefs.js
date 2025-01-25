@@ -8,4 +8,5 @@ const path_1 = __importDefault(require("path"));
 const load_files_1 = require("@graphql-tools/load-files");
 const merge_1 = require("@graphql-tools/merge");
 const loadedTypeDefs = (0, load_files_1.loadFilesSync)(path_1.default.join(__dirname, "./**/*.graphql"));
+console.dir({ loadedTypeDefs });
 exports.typeDefs = (0, merge_1.mergeTypeDefs)(loadedTypeDefs);

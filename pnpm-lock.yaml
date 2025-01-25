@@ -45,6 +45,9 @@ importers:
       '@types/node':
         specifier: ^22.10.10
         version: 22.10.10
+      '@types/ws':
+        specifier: ^8.5.14
+        version: 8.5.14
       tsx:
         specifier: ^4.19.2
         version: 4.19.2
@@ -288,6 +291,9 @@ packages:
 
   '@types/node@22.10.10':
     resolution: {integrity: sha512-X47y/mPNzxviAGY5TcYPtYL8JsY3kAq2n8fMmKoRCxq/c4v4pyGNCzM2R6+M5/umG4ZfHuT+sgqDYqWc9rJ6ww==, tarball: https://registry.npmjs.org/@types/node/-/node-22.10.10.tgz}
+
+  '@types/ws@8.5.14':
+    resolution: {integrity: sha512-bd/YFLW+URhBzMXurx7lWByOu+xzU9+kb3RboOteXYDfW+tr+JZa99OyNmPINEGB/ahzKrEuc8rcv4gnpJmxTw==, tarball: https://registry.npmjs.org/@types/ws/-/ws-8.5.14.tgz}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==, tarball: https://registry.npmjs.org/abort-controller/-/abort-controller-3.0.0.tgz}
@@ -1112,6 +1118,10 @@ snapshots:
   '@types/node@22.10.10':
     dependencies:
       undici-types: 6.20.0
+
+  '@types/ws@8.5.14':
+    dependencies:
+      '@types/node': 22.10.10
 
   abort-controller@3.0.0:
     dependencies:
