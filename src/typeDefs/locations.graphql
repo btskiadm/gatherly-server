@@ -1,9 +1,0 @@
-type City {
-  value: String!
-  label: String!
-}
-
-type Query {
-  getAllCities: [City!]!
-  getUsedCities: [City!]!
-}

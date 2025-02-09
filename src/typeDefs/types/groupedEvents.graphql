@@ -1,0 +1,4 @@
+type GroupedEvents {
+  monthReference: String!
+  events: [EventGroup!]!
+}

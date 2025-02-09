@@ -1,5 +1,5 @@
-import { ApplicationError } from "../errors/ApplicationError";
-import { RuntimeError } from "../errors/RuntimeError";
+import { ApplicationError } from "../errors/application.error";
+import { RuntimeError } from "../errors/runtime.error";
 
 const prefix = "Invariant failed";
 

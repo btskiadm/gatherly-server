@@ -1,0 +1,5 @@
+type UserDetails {
+  id: String!
+  username: String!
+  city: City!
+}

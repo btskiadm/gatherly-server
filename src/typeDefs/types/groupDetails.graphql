@@ -1,0 +1,25 @@
+type GroupDetails {
+  id: String!
+  title: String!
+  description: String!
+  createdAt: String!
+  sponsored: Boolean!
+  verified: Boolean!
+  remote: Boolean!
+  cities: [City!]!
+  categories: [Category!]!
+  users: [GroupUser!]!
+  comments: [Comment!]!
+  thumbnail: Thumbnail!
+  upcoming: [GroupedEvents!]!
+  pending: [GroupedEvents!]!
+  past: [GroupedEvents!]!
+  cancelled: [GroupedEvents!]!
+  events: [EventGroup!]!
+  upcomingLength: Int!
+  pendingLength: Int
+  pastLength: Int!
+  cancelledLength: Int!
+  eventsLength: Int!
+  rate: Float!
+}

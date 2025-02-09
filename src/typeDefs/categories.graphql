@@ -1,9 +1,0 @@
-type Category {
-  value: String!
-  label: String!
-}
-
-type Query {
-  getAllCategories: [Category!]!
-  getUsedCategories: [Category!]!
-}

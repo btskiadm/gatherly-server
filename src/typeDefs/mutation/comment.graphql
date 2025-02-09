@@ -1,0 +1,13 @@
+type AddGroupCommentResponse {
+  success: Boolean!
+  comment: Comment
+}
+
+input AddGroupCommentInput {
+  rate: Int!
+  content: String!
+}
+
+type Mutation {
+  addGroupComment(groupId: String, addGroupCommentInput: AddGroupCommentInput!): AddGroupCommentResponse!
+}

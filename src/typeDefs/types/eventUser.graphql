@@ -1,0 +1,6 @@
+type EventUser {
+  id: String!
+  isHost: Boolean!
+  isModerator: Boolean!
+  user: User!
+}

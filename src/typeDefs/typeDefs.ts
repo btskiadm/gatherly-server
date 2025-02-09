@@ -4,6 +4,4 @@ import { mergeTypeDefs } from "@graphql-tools/merge";
 
 const loadedTypeDefs = loadFilesSync(path.join(__dirname, "./**/*.graphql"));
 
-console.dir({ loadedTypeDefs });
-
 export const typeDefs = mergeTypeDefs(loadedTypeDefs);

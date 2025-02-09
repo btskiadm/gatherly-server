@@ -1,0 +1,15 @@
+type Query {
+  getGroupTiles(
+    categories: [String!]!
+    cities: [String!]!
+    titles: [String!]!
+    minMembers: Int!
+    maxMembers: Int!
+    remote: Boolean!
+    sponsored: Boolean!
+    verified: Boolean!
+    numberOfMembers: String!
+    dateOfAdding: String!
+  ): [GroupTile!]!
+  getGroupDetails(groupId: String!): GroupDetails
+}

@@ -1,0 +1,14 @@
+type Event {
+  id: String!
+  title: String!
+  description: String!
+  canceled: Boolean!
+  createdAt: String!
+  sponsored: Boolean!
+  verified: Boolean!
+  remote: Boolean!
+  users: [EventUser!]!
+  date: FromToDate!
+  cities: [City!]!
+  categories: [Category!]!
+}

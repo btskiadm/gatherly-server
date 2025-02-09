@@ -1,0 +1,4 @@
+type City {
+  value: String!
+  label: String!
+}

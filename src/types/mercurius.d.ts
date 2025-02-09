@@ -1,4 +1,4 @@
-import { buildContext } from "../libs/mercurius";
+import { buildContext } from "../plugins/mercurius";
 
 type PromiseType<T> = T extends PromiseLike<infer U> ? U : T;
 

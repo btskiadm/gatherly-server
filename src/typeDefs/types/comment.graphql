@@ -1,0 +1,7 @@
+type Comment {
+  id: String!
+  rate: Int!
+  content: String!
+  createdAt: String!
+  user: User!
+}

@@ -1,0 +1,5 @@
+type GroupUser {
+  isHost: Boolean!
+  isModerator: Boolean!
+  user: User!
+}

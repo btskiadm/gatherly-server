@@ -1,0 +1,4 @@
+type Query {
+  getAllCategories: [Category!]!
+  getUsedCategories: [Category!]!
+}

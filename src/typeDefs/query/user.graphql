@@ -1,0 +1,4 @@
+type Query {
+  getUsers: [User!]!
+  getUserDetails(userId: String): UserWithDetails
+}
