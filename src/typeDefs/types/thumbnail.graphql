@@ -1,4 +1,0 @@
-type Thumbnail {
-  id: String!
-  thumb: String!
-}

@@ -3,12 +3,13 @@ type Event {
   title: String!
   description: String!
   canceled: Boolean!
-  createdAt: String!
+  createdAt: Date!
   sponsored: Boolean!
   verified: Boolean!
   remote: Boolean!
   users: [EventUser!]!
-  date: FromToDate!
+  startAt: Date!
+  endAt: Date!
   cities: [City!]!
   categories: [Category!]!
 }

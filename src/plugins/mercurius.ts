@@ -1,16 +1,16 @@
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { defaultErrorFormatter, MercuriusOptions } from "mercurius";
-import { DataSource } from "../dataSources/datasource";
 import { resolvers } from "../resolvers/resolvers";
 import { typeDefs } from "../typeDefs/typeDefs";
+import { PrismaClient } from "@prisma/client";
 
-const dataSource = new DataSource();
+const prisma = new PrismaClient();
 
 export const buildContext = async (req: FastifyRequest, _reply: FastifyReply) => {
   return {
     authorization: req.headers.authorization,
-    dataSource: dataSource,
+    prisma: prisma,
   };
 };
 

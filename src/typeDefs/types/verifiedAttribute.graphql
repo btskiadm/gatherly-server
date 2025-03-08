@@ -1,4 +1,0 @@
-type VerifiedAttribute {
-  id: String!
-  value: Boolean!
-}

@@ -1,0 +1,32 @@
+input CreateGroupInput {
+  title: String!
+  description: String!
+  categories: [String!]!
+  cities: [String!]!
+  remote: Boolean!
+}
+
+type CreateGroupReponse {
+  success: Boolean!
+  group: Group
+}
+
+type DeleteGroupResponse {
+  success: Boolean!
+}
+
+type JoinGroupReponse {
+  success: Boolean!
+}
+
+type LeaveGroupReponse {
+  success: Boolean!
+}
+
+type Mutation {
+  # createGroup(createGroupInput: CreateGroupInput!): CreateGroupReponse!
+  # deleteGroup(groupId: String!): DeleteGroupResponse!
+  # joinGroup(groupId: String!): JoinGroupReponse!
+  # leaveGroup(groupId: String!): LeaveGroupReponse!
+  # inviteUsersToGroup(groupId: String!, userIds: [String!]!): LeaveGroupReponse!
+}

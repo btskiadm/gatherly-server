@@ -1,4 +1,0 @@
-type SponsoredAttribute {
-  id: String!
-  value: Boolean!
-}

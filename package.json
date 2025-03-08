@@ -6,26 +6,37 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc & cp src/typeDefs/*.graphql dist/typeDefs/",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "prisma:generate": "npx prisma generate",
+    "prisma:format": "npx prisma format",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:push": "npx prisma db push",
+    "prisma:reset": "npx prisma migrate reset --force --skip-seed",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "generate:schema": "pnpm --package=@graphql-codegen/cli@5.0.4 dlx graphql-codegen -r dotenv/config -c codegen.schema.yml --debug --verbose",
+    "generate:model": "pnpm --package=@graphql-codegen/cli@5.0.4 dlx graphql-codegen -r dotenv/config -c codegen.model.yml --debug --verbose",
+    "generate": "pnpm run generate:schema && pnpm run generate:model"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
     "@graphql-tools/load-files": "^7.0.1",
-    "@graphql-tools/merge": "^9.0.17",
-    "@graphql-tools/resolvers-composition": "^7.0.11",
-    "@graphql-tools/schema": "^10.0.16",
+    "@graphql-tools/merge": "^9.0.20",
+    "@graphql-tools/resolvers-composition": "^7.0.14",
+    "@graphql-tools/schema": "^10.0.19",
+    "@prisma/client": "^6.4.1",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
     "fastify-plugin": "^5.0.1",
     "graphql": "^16.10.0",
-    "mercurius": "^16.0.1",
+    "mercurius": "^16.1.0",
     "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0"
+    "pino-pretty": "^13.0.0",
+    "prisma": "^6.4.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.10",
+    "@types/node": "^22.13.5",
     "@types/ws": "^8.5.14",
-    "tsx": "^4.19.2",
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3"
   },
   "engines": {

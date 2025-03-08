@@ -1,4 +1,5 @@
 type Category {
+  id: String!
   value: String!
   label: String!
 }

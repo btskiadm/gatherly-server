@@ -2,15 +2,14 @@ type GroupDetails {
   id: String!
   title: String!
   description: String!
-  createdAt: String!
+  createdAt: Date!
   sponsored: Boolean!
   verified: Boolean!
   remote: Boolean!
   cities: [City!]!
   categories: [Category!]!
-  users: [GroupUser!]!
+  members: [GroupUser!]!
   comments: [Comment!]!
-  thumbnail: Thumbnail!
   upcoming: [GroupedEvents!]!
   pending: [GroupedEvents!]!
   past: [GroupedEvents!]!
@@ -22,4 +21,7 @@ type GroupDetails {
   cancelledLength: Int!
   eventsLength: Int!
   rate: Float!
+  smallPhoto: String!
+  mediumPhoto: String!
+  largePhoto: String!
 }

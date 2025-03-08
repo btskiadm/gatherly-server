@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id         String    @id @default(uuid())
+  email      String    @unique
+  username   String    @unique
+  createdAt  DateTime  @default(now())
+  verifiedAt DateTime?
+  role       Role      @default(USER)
+
+  smallPhoto  String
+  mediumPhoto String
+  largePhoto  String
+
+  profile  UserProfile?
+  groups   GroupUser[]
+  comments Comment[]
+  events   EventUser[]
+}
+
+model UserProfile {
+  id     String @id @default(uuid())
+  bio    String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  title       String
+  description String
+
+  isVerified     Boolean   @default(false)
+  sponsoredUntil DateTime?
+
+  smallPhoto  String
+  mediumPhoto String
+  largePhoto  String
+
+  categories CategoryGroup[]
+  users      GroupUser[]
+  cities     CityGroup[]
+  comments   Comment[]
+  events     Event[]
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  canceled    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  startAt     DateTime
+  endAt       DateTime
+
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+
+  users      EventUser[]
+  cities     CityEvent[]
+  categories CategoryEvent[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  rate      Int
+  content   String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+}
+
+model Category {
+  id     String          @id @default(uuid())
+  value  String          @unique
+  label  String          @unique
+  groups CategoryGroup[]
+  events CategoryEvent[]
+}
+
+model City {
+  id     String      @id @default(uuid())
+  value  String      @unique
+  label  String      @unique
+  groups CityGroup[]
+  events CityEvent[]
+}
+
+model GroupUser {
+  id          String  @id @default(uuid())
+  isHost      Boolean @default(false)
+  isModerator Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+}
+
+model EventUser {
+  id          String  @id @default(uuid())
+  isHost      Boolean @default(false)
+  isModerator Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+}
+
+model CategoryGroup {
+  id         String   @id @default(uuid())
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId    String
+}
+
+model CategoryEvent {
+  id String @id @default(uuid())
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId    String
+}
+
+model CityGroup {
+  id      String @id @default(uuid())
+  city    City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  cityId  String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+}
+
+model CityEvent {
+  id      String @id @default(uuid())
+  city    City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  cityId  String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+}

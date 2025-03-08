@@ -1,9 +1,23 @@
 import Fastify, { FastifyServerOptions } from "fastify";
 import cors from "@fastify/cors";
 import mercurius from "mercurius";
+import { PrismaClient } from "@prisma/client";
 import { mercuriusOptions } from "./plugins/mercurius";
 import { env } from "./utils/env";
 import { pinoOptions } from "./plugins/pino";
+
+// export type MessagePopulated = Prisma.MessageGetPayload<{
+//   include: typeof messagePopulated;
+// }>;
+
+// export const messagePopulated = Prisma.validator<Prisma.MessageInclude>()({
+//   sender: {
+//     select: {
+//       id: true,
+//       username: true,
+//     },
+//   },
+// });
 
 const createServer = () => {
   const fastifyOptions: FastifyServerOptions = {

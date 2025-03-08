@@ -1,6 +1,33 @@
+enum Role {
+  USER
+  ADMIN
+}
+
 type User {
   id: String!
   username: String!
-  thumbnail: Thumbnail!
-  verifiedAt: String
+  email: String!
+  createdAt: Date!
+  role: Role!
+  verifiedAt: Date
+  smallPhoto: String!
+  mediumPhoto: String!
+  largePhoto: String!
+}
+
+type UserWithProfile {
+  id: String!
+  username: String!
+  email: String!
+  createdAt: Date!
+  role: Role!
+  profile: Profile
+  smallPhoto: String!
+  mediumPhoto: String!
+  largePhoto: String!
+}
+
+type Profile {
+  id: String!
+  bio: String!
 }

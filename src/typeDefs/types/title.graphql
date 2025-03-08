@@ -1,4 +1,5 @@
 type Title {
+  id: String!
   label: String!
   value: String!
 }

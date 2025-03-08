@@ -1,7 +1,7 @@
 type Comment {
   id: String!
-  rate: Int!
+  rate: Float!
   content: String!
-  createdAt: String!
+  createdAt: Date!
   user: User!
 }

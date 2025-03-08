@@ -1,26 +1,18 @@
 import { MercuriusContext } from "mercurius";
-import { toCategoryDto } from "../utils/mappers";
-import { CategoryDto } from "../dtos/category.dto";
+import { Category } from "../model/model";
+import { categoryValidator } from "../prisma/validators/category.validators";
 
 export default {
   Query: {
-    getAllCategories: async (
-      _: unknown,
-      args: unknown,
-      { dataSource: { categoryDataSource } }: MercuriusContext
-    ): Promise<CategoryDto[]> => {
-      const categories = await categoryDataSource.getCategories();
-
-      return categories.map(toCategoryDto);
+    getCategories: async (_: unknown, args: unknown, { prisma }: MercuriusContext): Promise<Category[]> => {
+      return await prisma.category.findMany({
+        include: categoryValidator,
+      });
     },
-    getUsedCategories: async (
-      _: unknown,
-      args: unknown,
-      { dataSource: { categoryDataSource } }: MercuriusContext
-    ): Promise<CategoryDto[]> => {
-      const categories = await categoryDataSource.getCategories();
-
-      return categories.map(toCategoryDto);
+    getUsedCategories: async (_: unknown, args: unknown, { prisma }: MercuriusContext): Promise<Category[]> => {
+      return await prisma.category.findMany({
+        include: categoryValidator,
+      });
     },
   },
 };

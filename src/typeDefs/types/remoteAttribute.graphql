@@ -1,4 +1,0 @@
-type RemoteAttribute {
-  id: String!
-  value: Boolean!
-}

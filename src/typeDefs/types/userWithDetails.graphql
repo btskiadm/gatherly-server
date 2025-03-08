@@ -1,7 +1,0 @@
-type UserWithDetails {
-  id: String!
-  username: String!
-  thumbnail: Thumbnail!
-  verifiedAt: String
-  userDetails: UserDetails!
-}
