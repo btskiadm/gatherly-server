@@ -23,7 +23,37 @@ type Comment {
   user: User!
 }
 
+input CreateEventInput {
+  categories: [String!]!
+  cities: [String!]!
+  description: String!
+  endAt: Date!
+  startAt: Date!
+  title: String!
+}
+
+type CreateEventReponse {
+  eventId: String
+  success: Boolean!
+}
+
+input CreateGroupInput {
+  categories: [String!]!
+  cities: [String!]!
+  description: String!
+  title: String!
+}
+
+type CreateGroupReponse {
+  groupId: String
+  success: Boolean!
+}
+
 scalar Date
+
+type DeleteGroupResponse {
+  success: Boolean!
+}
 
 type Event {
   canceled: Boolean!
@@ -117,6 +147,7 @@ type GroupTile {
 }
 
 type GroupUser {
+  id: String!
   isHost: Boolean!
   isModerator: Boolean!
   user: User!
@@ -125,6 +156,21 @@ type GroupUser {
 type GroupedEvents {
   events: [EventGroup!]!
   monthReference: String!
+}
+
+type JoinGroupReponse {
+  success: Boolean!
+}
+
+type LeaveGroupReponse {
+  success: Boolean!
+}
+
+type Mutation {
+  createEvent(createEventInput: CreateEventInput!, groupId: String!): CreateEventReponse!
+  createGroup(createGroupInput: CreateGroupInput!): CreateGroupReponse!
+  joinGroup(groupId: String!): JoinGroupReponse!
+  leaveGroup(groupId: String!): LeaveGroupReponse!
 }
 
 type Profile {
@@ -140,9 +186,9 @@ type Query {
   getGroupTitles(title: String!): [Title!]!
   getUsedCategories: [Category!]!
   getUsedCities: [City!]!
-  getUserWithProfile(username: String!): UserWithProfile!
+  getUserWithProfile(username: String!): UserWithProfile
   getUsers: [User!]!
-  getUsersByUsername(username: String): [User!]!
+  getUsersByUsername(username: String!): [User!]!
 }
 
 enum Role {

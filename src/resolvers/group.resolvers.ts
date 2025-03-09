@@ -1,6 +1,23 @@
-import { Event, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { MercuriusContext } from "mercurius";
-import { Category, City, EventGroup, GroupDetails, GroupedEvents, GroupTile, Title } from "../model/model";
+import {
+  Category,
+  City,
+  CreateGroupInput,
+  CreateGroupReponse,
+  EventGroup,
+  GroupDetails,
+  GroupedEvents,
+  GroupTile,
+  Mutation,
+  MutationCreateGroupArgs,
+  MutationJoinGroupArgs,
+  MutationLeaveGroupArgs,
+  Query,
+  QueryGetGroupTilesArgs,
+  QueryGetGroupTitlesArgs,
+  Title,
+} from "../model/model";
 import { env } from "../utils/env";
 
 // Typy dla sortowania.
@@ -86,9 +103,9 @@ export default {
     // Wyszukuje grupy, których tytuł zawiera podany ciąg znaków.
     getGroupTitles: async (
       _: unknown,
-      { title }: { title: string },
+      { title }: QueryGetGroupTitlesArgs,
       { prisma }: MercuriusContext
-    ): Promise<Title[]> => {
+    ): Promise<Query["getGroupTitles"]> => {
       const groups = await prisma.group.findMany({
         where: {
           title: { contains: title },
@@ -117,24 +134,12 @@ export default {
         maxMembers,
         numberOfMembers,
         dateOfAdding,
-        skip = 0,
-        take = 50,
-      }: {
-        categories: string[];
-        titles: string[];
-        cities: string[];
-        sponsored: boolean;
-        verified: boolean;
-        remote: boolean;
-        minMembers: number;
-        maxMembers: number;
-        numberOfMembers: NumberOfMembers;
-        dateOfAdding: DateOfAdding;
-        skip?: number;
-        take?: number;
-      },
+      }: QueryGetGroupTilesArgs,
       { prisma }: MercuriusContext
-    ): Promise<GroupTile[]> => {
+    ): Promise<Query["getGroupTiles"]> => {
+      const skip = 0,
+        take = 50;
+
       // Budowanie warunków filtrowania.
       const titleCondition = buildTitleCondition(titles);
       const categoryCondition = buildCategoryCondition(categories);
@@ -423,6 +428,96 @@ export default {
         mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${group.mediumPhoto}`,
         smallPhoto: `${env.PHOTOS_BUCKET_URL}/${group.smallPhoto}`,
       };
+    },
+  },
+
+  Mutation: {
+    createGroup: async (
+      _: unknown,
+      { createGroupInput }: MutationCreateGroupArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["createGroup"]> => {
+      const { title, description, categories, cities } = createGroupInput;
+
+      try {
+        const newGroup = await prisma.group.create({
+          data: {
+            title,
+            description,
+            smallPhoto: "128x128",
+            mediumPhoto: "256x256",
+            largePhoto: "512x512",
+            categories: {
+              create: categories.map((catValue) => ({
+                category: { connect: { value: catValue } },
+              })),
+            },
+            cities: {
+              create: cities.map((cityValue) => ({
+                city: { connect: { value: cityValue } },
+              })),
+            },
+            users: {
+              create: {
+                isHost: true,
+                isModerator: false,
+                user: {
+                  connect: {
+                    id: user.id,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return { success: true, groupId: newGroup.id };
+      } catch (error) {
+        console.error("Error creating group:", error);
+        return { success: false };
+      }
+    },
+
+    joinGroup: async (
+      _: unknown,
+      { groupId }: MutationJoinGroupArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["joinGroup"]> => {
+      try {
+        await prisma.groupUser.create({
+          data: {
+            user: { connect: { id: user.id } },
+            group: { connect: { id: groupId } },
+          },
+        });
+
+        return { success: true };
+      } catch (error) {
+        console.error("Error joining group:", error);
+        return { success: false };
+      }
+    },
+
+    leaveGroup: async (
+      _: unknown,
+      { groupId }: MutationLeaveGroupArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["leaveGroup"]> => {
+      try {
+        await prisma.groupUser.delete({
+          where: {
+            userId_groupId: {
+              userId: user.id,
+              groupId: groupId,
+            },
+          },
+        });
+
+        return { success: true };
+      } catch (error) {
+        console.error("Error leaving group:", error);
+        return { success: false };
+      }
     },
   },
 };

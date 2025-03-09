@@ -1,0 +1,17 @@
+input CreateEventInput {
+  title: String!
+  description: String!
+  categories: [String!]!
+  cities: [String!]!
+  startAt: Date!
+  endAt: Date!
+}
+
+type CreateEventReponse {
+  success: Boolean!
+  eventId: String
+}
+
+type Mutation {
+  createEvent(groupId: String!, createEventInput: CreateEventInput!): CreateEventReponse!
+}

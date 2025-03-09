@@ -3,12 +3,11 @@ input CreateGroupInput {
   description: String!
   categories: [String!]!
   cities: [String!]!
-  remote: Boolean!
 }
 
 type CreateGroupReponse {
   success: Boolean!
-  group: Group
+  groupId: String
 }
 
 type DeleteGroupResponse {
@@ -24,9 +23,9 @@ type LeaveGroupReponse {
 }
 
 type Mutation {
-  # createGroup(createGroupInput: CreateGroupInput!): CreateGroupReponse!
+  createGroup(createGroupInput: CreateGroupInput!): CreateGroupReponse!
   # deleteGroup(groupId: String!): DeleteGroupResponse!
-  # joinGroup(groupId: String!): JoinGroupReponse!
-  # leaveGroup(groupId: String!): LeaveGroupReponse!
+  joinGroup(groupId: String!): JoinGroupReponse!
+  leaveGroup(groupId: String!): LeaveGroupReponse!
   # inviteUsersToGroup(groupId: String!, userIds: [String!]!): LeaveGroupReponse!
 }

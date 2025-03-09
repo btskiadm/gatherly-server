@@ -45,6 +45,39 @@ export type Comment = {
   user: User;
 };
 
+export type CreateEventInput = {
+  categories: Array<Scalars['String']['input']>;
+  cities: Array<Scalars['String']['input']>;
+  description: Scalars['String']['input'];
+  endAt: Scalars['Date']['input'];
+  startAt: Scalars['Date']['input'];
+  title: Scalars['String']['input'];
+};
+
+export type CreateEventReponse = {
+  __typename?: 'CreateEventReponse';
+  eventId?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type CreateGroupInput = {
+  categories: Array<Scalars['String']['input']>;
+  cities: Array<Scalars['String']['input']>;
+  description: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+};
+
+export type CreateGroupReponse = {
+  __typename?: 'CreateGroupReponse';
+  groupId?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type DeleteGroupResponse = {
+  __typename?: 'DeleteGroupResponse';
+  success: Scalars['Boolean']['output'];
+};
+
 export type Event = {
   __typename?: 'Event';
   canceled: Scalars['Boolean']['output'];
@@ -144,6 +177,7 @@ export type GroupTile = {
 
 export type GroupUser = {
   __typename?: 'GroupUser';
+  id: Scalars['String']['output'];
   isHost: Scalars['Boolean']['output'];
   isModerator: Scalars['Boolean']['output'];
   user: User;
@@ -153,6 +187,45 @@ export type GroupedEvents = {
   __typename?: 'GroupedEvents';
   events: Array<EventGroup>;
   monthReference: Scalars['String']['output'];
+};
+
+export type JoinGroupReponse = {
+  __typename?: 'JoinGroupReponse';
+  success: Scalars['Boolean']['output'];
+};
+
+export type LeaveGroupReponse = {
+  __typename?: 'LeaveGroupReponse';
+  success: Scalars['Boolean']['output'];
+};
+
+export type Mutation = {
+  __typename?: 'Mutation';
+  createEvent: CreateEventReponse;
+  createGroup: CreateGroupReponse;
+  joinGroup: JoinGroupReponse;
+  leaveGroup: LeaveGroupReponse;
+};
+
+
+export type MutationCreateEventArgs = {
+  createEventInput: CreateEventInput;
+  groupId: Scalars['String']['input'];
+};
+
+
+export type MutationCreateGroupArgs = {
+  createGroupInput: CreateGroupInput;
+};
+
+
+export type MutationJoinGroupArgs = {
+  groupId: Scalars['String']['input'];
+};
+
+
+export type MutationLeaveGroupArgs = {
+  groupId: Scalars['String']['input'];
 };
 
 export type Profile = {
@@ -170,7 +243,7 @@ export type Query = {
   getGroupTitles: Array<Title>;
   getUsedCategories: Array<Category>;
   getUsedCities: Array<City>;
-  getUserWithProfile: UserWithProfile;
+  getUserWithProfile?: Maybe<UserWithProfile>;
   getUsers: Array<User>;
   getUsersByUsername: Array<User>;
 };
@@ -206,7 +279,7 @@ export type QueryGetUserWithProfileArgs = {
 
 
 export type QueryGetUsersByUsernameArgs = {
-  username?: InputMaybe<Scalars['String']['input']>;
+  username: Scalars['String']['input'];
 };
 
 export type Role =

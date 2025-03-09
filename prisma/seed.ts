@@ -61,12 +61,32 @@ async function main() {
   // Utworzenie użytkowników wraz z profilami
   // ---------------------------
   const users = [];
+
+  const adminUser = await prisma.user.create({
+    data: {
+      id: "1418bfc2-9a78-4dd1-988c-25962eb51af2",
+      email: `admin@admin.com`,
+      username: `admin`,
+      role: Role.ADMIN,
+      smallPhoto: "128x128",
+      mediumPhoto: "256x256",
+      largePhoto: "512x512",
+      profile: {
+        create: {
+          bio: `Bio admina`,
+        },
+      },
+    },
+  });
+
+  users.push(adminUser);
+
   for (let i = 1; i <= 10; i++) {
     const user = await prisma.user.create({
       data: {
         email: `user${i}@example.com`,
         username: `user${i}`,
-        role: i % 3 === 0 ? Role.ADMIN : Role.USER,
+        role: Role.USER,
         smallPhoto: "128x128",
         mediumPhoto: "256x256",
         largePhoto: "512x512",
