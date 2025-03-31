@@ -1,4 +1,4 @@
-type GroupTile implements GroupBase {
+interface GroupBase {
   id: String!
   title: String!
   description: String!
@@ -7,9 +7,4 @@ type GroupTile implements GroupBase {
   smallPhoto: String!
   mediumPhoto: String!
   largePhoto: String!
-
-  cities: [City!]!
-  categories: [Category!]!
-  eventsCount: Int!
-  usersCount: Int!
 }

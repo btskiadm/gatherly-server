@@ -1,0 +1,20 @@
+type CategoryUserProfile {
+  category: Category!
+}
+
+type CityUserProfile {
+  city: City!
+}
+
+type Profile {
+  id: String!
+  bio: String
+  facebook: String
+  twitter: String
+  tiktok: String
+  youtube: String
+  instagram: String
+  phoneNumber: String
+  categories: [CategoryUserProfile!]!
+  cities: [CityUserProfile!]!
+}

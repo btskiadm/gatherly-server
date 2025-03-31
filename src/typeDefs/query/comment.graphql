@@ -1,0 +1,7 @@
+type GetGroupCommentsResponse {
+  comments: [Comment!]!
+}
+
+type Query {
+  getGroupComments(groupId: String!): GetGroupCommentsResponse!
+}

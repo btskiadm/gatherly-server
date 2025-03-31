@@ -1,0 +1,7 @@
+enum GroupStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  SUSPENDED
+  PENDING_VERIFICATION
+}

@@ -4,9 +4,6 @@ type Event {
   description: String!
   canceled: Boolean!
   createdAt: Date!
-  sponsored: Boolean!
-  verified: Boolean!
-  remote: Boolean!
   users: [EventUser!]!
   startAt: Date!
   endAt: Date!

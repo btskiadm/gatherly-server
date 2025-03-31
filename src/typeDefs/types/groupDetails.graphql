@@ -1,14 +1,39 @@
-type GroupDetails {
+type GroupedEvents {
+  monthReference: String!
+  events: [EventGroup!]!
+}
+
+type EventGroup {
   id: String!
   title: String!
   description: String!
   createdAt: Date!
-  sponsored: Boolean!
-  verified: Boolean!
-  remote: Boolean!
+  canceled: Boolean!
+  users: [EventUser!]!
+  startAt: Date!
+  endAt: Date!
   cities: [City!]!
   categories: [Category!]!
-  members: [GroupUser!]!
+}
+
+type GroupUser {
+  id: String!
+  role: Role!
+  user: User!
+}
+
+type GroupDetails implements GroupBase {
+  id: String!
+  title: String!
+  description: String!
+  createdAt: Date!
+  updatedAt: Date!
+  smallPhoto: String!
+  mediumPhoto: String!
+  largePhoto: String!
+  cities: [City!]!
+  categories: [Category!]!
+  users: [GroupUser!]!
   comments: [Comment!]!
   upcoming: [GroupedEvents!]!
   pending: [GroupedEvents!]!
@@ -21,7 +46,4 @@ type GroupDetails {
   cancelledLength: Int!
   eventsLength: Int!
   rate: Float!
-  smallPhoto: String!
-  mediumPhoto: String!
-  largePhoto: String!
 }

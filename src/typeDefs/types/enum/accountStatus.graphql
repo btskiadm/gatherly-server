@@ -1,0 +1,7 @@
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  SUSPENDED
+  PENDING_VERIFICATION
+}

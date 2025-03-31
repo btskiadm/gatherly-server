@@ -1,6 +1,0 @@
-type GroupUser {
-  id: String!
-  isHost: Boolean!
-  isModerator: Boolean!
-  user: User!
-}

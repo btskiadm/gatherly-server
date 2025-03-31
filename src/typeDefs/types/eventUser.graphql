@@ -1,6 +1,5 @@
 type EventUser {
   id: String!
-  isHost: Boolean!
-  isModerator: Boolean!
+  role: Role!
   user: User!
 }

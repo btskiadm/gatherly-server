@@ -20,7 +20,6 @@ export default {
             some: {},
           },
         },
-        include: categoryValidator,
       });
     },
   },

@@ -1,6 +1,6 @@
 import { MercuriusContext } from "mercurius";
-import { userValidator, userWithProfileValidator } from "../prisma/validators/user.validators";
-import { Query, QueryGetUsersByUsernameArgs, QueryGetUserWithProfileArgs, User, UserWithProfile } from "../model/model";
+import { Query, QueryGetUsersByUsernameArgs, QueryGetUserWithProfileArgs } from "../model/model";
+import { userValidator } from "../prisma/validators/user.validators";
 
 export default {
   Query: {
@@ -18,21 +18,35 @@ export default {
             contains: username,
           },
         },
-        include: userValidator,
       });
     },
     getUserWithProfile: async (
       _: unknown,
-      { username }: QueryGetUserWithProfileArgs,
+      { userId }: QueryGetUserWithProfileArgs,
       { prisma }: MercuriusContext
     ): Promise<Query["getUserWithProfile"]> => {
       return await prisma.user.findFirst({
         where: {
-          username: {
-            contains: username,
+          id: {
+            contains: userId,
           },
         },
-        include: userWithProfileValidator,
+        include: {
+          profile: {
+            include: {
+              categories: {
+                include: {
+                  category: true,
+                },
+              },
+              cities: {
+                include: {
+                  city: true,
+                },
+              },
+            },
+          },
+        },
       });
     },
   },

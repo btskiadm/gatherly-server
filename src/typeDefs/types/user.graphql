@@ -1,33 +1,25 @@
-enum Role {
-  USER
-  ADMIN
-}
-
-type User {
+type User implements UserBase {
   id: String!
   username: String!
   email: String!
   createdAt: Date!
-  role: Role!
-  verifiedAt: Date
+  role: AppRole!
+  status: AccountStatus!
   smallPhoto: String!
   mediumPhoto: String!
   largePhoto: String!
 }
 
-type UserWithProfile {
+type UserWithProfile implements UserBase {
   id: String!
   username: String!
   email: String!
   createdAt: Date!
-  role: Role!
-  profile: Profile
+  role: AppRole!
+  status: AccountStatus!
   smallPhoto: String!
   mediumPhoto: String!
   largePhoto: String!
-}
 
-type Profile {
-  id: String!
-  bio: String!
+  profile: Profile!
 }

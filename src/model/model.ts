@@ -22,6 +22,29 @@ export type Scalars = {
   Date: { input: any; output: any; }
 };
 
+export type AccountStatus =
+  | 'ACTIVE'
+  | 'BANNED'
+  | 'INACTIVE'
+  | 'PENDING_VERIFICATION'
+  | 'SUSPENDED';
+
+export type AddGroupCommentInput = {
+  content: Scalars['String']['input'];
+  rate: Scalars['Int']['input'];
+};
+
+export type AddGroupCommentResponse = {
+  __typename?: 'AddGroupCommentResponse';
+  comment?: Maybe<Comment>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type AppRole =
+  | 'ADMIN'
+  | 'MODERATOR'
+  | 'USER';
+
 export type Category = {
   __typename?: 'Category';
   id: Scalars['String']['output'];
@@ -29,11 +52,26 @@ export type Category = {
   value: Scalars['String']['output'];
 };
 
+export type CategoryUserProfile = {
+  __typename?: 'CategoryUserProfile';
+  category: Category;
+};
+
+export type CheckUserGroupPermission = {
+  __typename?: 'CheckUserGroupPermission';
+  role?: Maybe<Role>;
+};
+
 export type City = {
   __typename?: 'City';
   id: Scalars['String']['output'];
   label: Scalars['String']['output'];
   value: Scalars['String']['output'];
+};
+
+export type CityUserProfile = {
+  __typename?: 'CityUserProfile';
+  city: City;
 };
 
 export type Comment = {
@@ -87,12 +125,9 @@ export type Event = {
   description: Scalars['String']['output'];
   endAt: Scalars['Date']['output'];
   id: Scalars['String']['output'];
-  remote: Scalars['Boolean']['output'];
-  sponsored: Scalars['Boolean']['output'];
   startAt: Scalars['Date']['output'];
   title: Scalars['String']['output'];
   users: Array<EventUser>;
-  verified: Scalars['Boolean']['output'];
 };
 
 export type EventGroup = {
@@ -104,30 +139,41 @@ export type EventGroup = {
   description: Scalars['String']['output'];
   endAt: Scalars['Date']['output'];
   id: Scalars['String']['output'];
-  remote: Scalars['Boolean']['output'];
-  sponsored: Scalars['Boolean']['output'];
   startAt: Scalars['Date']['output'];
   title: Scalars['String']['output'];
   users: Array<EventUser>;
-  verified: Scalars['Boolean']['output'];
 };
 
 export type EventUser = {
   __typename?: 'EventUser';
   id: Scalars['String']['output'];
-  isHost: Scalars['Boolean']['output'];
-  isModerator: Scalars['Boolean']['output'];
+  role: Role;
   user: User;
 };
 
-export type FromToDate = {
-  __typename?: 'FromToDate';
-  endAt: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  startAt: Scalars['String']['output'];
+export type GetGroupCommentsResponse = {
+  __typename?: 'GetGroupCommentsResponse';
+  comments: Array<Comment>;
 };
 
-export type GroupDetails = {
+export type GetGroupsByUserIdReponse = {
+  __typename?: 'GetGroupsByUserIdReponse';
+  count: Scalars['Int']['output'];
+  groups: Array<GroupTile>;
+};
+
+export type GroupBase = {
+  createdAt: Scalars['Date']['output'];
+  description: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  largePhoto: Scalars['String']['output'];
+  mediumPhoto: Scalars['String']['output'];
+  smallPhoto: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type GroupDetails = GroupBase & {
   __typename?: 'GroupDetails';
   cancelled: Array<GroupedEvents>;
   cancelledLength: Scalars['Int']['output'];
@@ -141,22 +187,27 @@ export type GroupDetails = {
   id: Scalars['String']['output'];
   largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
-  members: Array<GroupUser>;
   past: Array<GroupedEvents>;
   pastLength: Scalars['Int']['output'];
   pending: Array<GroupedEvents>;
   pendingLength?: Maybe<Scalars['Int']['output']>;
   rate: Scalars['Float']['output'];
-  remote: Scalars['Boolean']['output'];
   smallPhoto: Scalars['String']['output'];
-  sponsored: Scalars['Boolean']['output'];
   title: Scalars['String']['output'];
   upcoming: Array<GroupedEvents>;
   upcomingLength: Scalars['Int']['output'];
-  verified: Scalars['Boolean']['output'];
+  updatedAt: Scalars['Date']['output'];
+  users: Array<GroupUser>;
 };
 
-export type GroupTile = {
+export type GroupStatus =
+  | 'ACTIVE'
+  | 'BANNED'
+  | 'INACTIVE'
+  | 'PENDING_VERIFICATION'
+  | 'SUSPENDED';
+
+export type GroupTile = GroupBase & {
   __typename?: 'GroupTile';
   categories: Array<Category>;
   cities: Array<City>;
@@ -164,23 +215,36 @@ export type GroupTile = {
   description: Scalars['String']['output'];
   eventsCount: Scalars['Int']['output'];
   id: Scalars['String']['output'];
-  isSponsored: Scalars['Boolean']['output'];
-  isVerified: Scalars['Boolean']['output'];
   largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
-  membersCount: Scalars['Int']['output'];
   smallPhoto: Scalars['String']['output'];
-  sponsoredUntil?: Maybe<Scalars['Date']['output']>;
   title: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
+  usersCount: Scalars['Int']['output'];
 };
 
 export type GroupUser = {
   __typename?: 'GroupUser';
   id: Scalars['String']['output'];
-  isHost: Scalars['Boolean']['output'];
-  isModerator: Scalars['Boolean']['output'];
+  role: Role;
   user: User;
+};
+
+export type GroupWithStatus = GroupBase & {
+  __typename?: 'GroupWithStatus';
+  categories: Array<Category>;
+  cities: Array<City>;
+  createdAt: Scalars['Date']['output'];
+  description: Scalars['String']['output'];
+  eventsCount: Scalars['Int']['output'];
+  id: Scalars['String']['output'];
+  largePhoto: Scalars['String']['output'];
+  mediumPhoto: Scalars['String']['output'];
+  smallPhoto: Scalars['String']['output'];
+  status: GroupStatus;
+  title: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+  usersCount: Scalars['Int']['output'];
 };
 
 export type GroupedEvents = {
@@ -199,12 +263,33 @@ export type LeaveGroupReponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type LoginResponse = {
+  __typename?: 'LoginResponse';
+  accessToken: Scalars['String']['output'];
+  user: User;
+};
+
+export type LogoutResponse = {
+  __typename?: 'LogoutResponse';
+  status: Scalars['String']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  addGroupComment: AddGroupCommentResponse;
   createEvent: CreateEventReponse;
   createGroup: CreateGroupReponse;
   joinGroup: JoinGroupReponse;
   leaveGroup: LeaveGroupReponse;
+  login?: Maybe<LoginResponse>;
+  logout?: Maybe<LogoutResponse>;
+  refreshToken?: Maybe<RefreshTokenResponse>;
+};
+
+
+export type MutationAddGroupCommentArgs = {
+  addGroupCommentInput: AddGroupCommentInput;
+  groupId: Scalars['String']['input'];
 };
 
 
@@ -228,24 +313,54 @@ export type MutationLeaveGroupArgs = {
   groupId: Scalars['String']['input'];
 };
 
+
+export type MutationLoginArgs = {
+  password: Scalars['String']['input'];
+  username: Scalars['String']['input'];
+};
+
 export type Profile = {
   __typename?: 'Profile';
-  bio: Scalars['String']['output'];
+  bio?: Maybe<Scalars['String']['output']>;
+  categories: Array<CategoryUserProfile>;
+  cities: Array<CityUserProfile>;
+  facebook?: Maybe<Scalars['String']['output']>;
   id: Scalars['String']['output'];
+  instagram?: Maybe<Scalars['String']['output']>;
+  phoneNumber?: Maybe<Scalars['String']['output']>;
+  tiktok?: Maybe<Scalars['String']['output']>;
+  twitter?: Maybe<Scalars['String']['output']>;
+  youtube?: Maybe<Scalars['String']['output']>;
 };
 
 export type Query = {
   __typename?: 'Query';
+  checkUserGroupPermissions: CheckUserGroupPermission;
   getCategories: Array<Category>;
   getCities: Array<City>;
+  getGroupComments: GetGroupCommentsResponse;
   getGroupDetails?: Maybe<GroupDetails>;
   getGroupTiles: Array<GroupTile>;
+  getGroupTilesByUserId: GetGroupsByUserIdReponse;
   getGroupTitles: Array<Title>;
   getUsedCategories: Array<Category>;
   getUsedCities: Array<City>;
   getUserWithProfile?: Maybe<UserWithProfile>;
   getUsers: Array<User>;
   getUsersByUsername: Array<User>;
+  groups: Array<GroupWithStatus>;
+  me?: Maybe<User>;
+  users: Array<User>;
+};
+
+
+export type QueryCheckUserGroupPermissionsArgs = {
+  groupId: Scalars['String']['input'];
+};
+
+
+export type QueryGetGroupCommentsArgs = {
+  groupId: Scalars['String']['input'];
 };
 
 
@@ -261,10 +376,14 @@ export type QueryGetGroupTilesArgs = {
   maxMembers: Scalars['Int']['input'];
   minMembers: Scalars['Int']['input'];
   numberOfMembers: Scalars['String']['input'];
-  remote: Scalars['Boolean']['input'];
-  sponsored: Scalars['Boolean']['input'];
   titles: Array<Scalars['String']['input']>;
-  verified: Scalars['Boolean']['input'];
+};
+
+
+export type QueryGetGroupTilesByUserIdArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  take?: InputMaybe<Scalars['Int']['input']>;
+  userId: Scalars['String']['input'];
 };
 
 
@@ -274,7 +393,7 @@ export type QueryGetGroupTitlesArgs = {
 
 
 export type QueryGetUserWithProfileArgs = {
-  username: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
 };
 
 
@@ -282,9 +401,16 @@ export type QueryGetUsersByUsernameArgs = {
   username: Scalars['String']['input'];
 };
 
+export type RefreshTokenResponse = {
+  __typename?: 'RefreshTokenResponse';
+  accessToken: Scalars['String']['output'];
+  user: User;
+};
+
 export type Role =
-  | 'ADMIN'
-  | 'USER';
+  | 'HOST'
+  | 'MEMBER'
+  | 'MODERATOR';
 
 export type Title = {
   __typename?: 'Title';
@@ -293,28 +419,40 @@ export type Title = {
   value: Scalars['String']['output'];
 };
 
-export type User = {
+export type User = UserBase & {
   __typename?: 'User';
   createdAt: Scalars['Date']['output'];
   email: Scalars['String']['output'];
   id: Scalars['String']['output'];
   largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
-  role: Role;
+  role: AppRole;
   smallPhoto: Scalars['String']['output'];
+  status: AccountStatus;
   username: Scalars['String']['output'];
-  verifiedAt?: Maybe<Scalars['Date']['output']>;
 };
 
-export type UserWithProfile = {
+export type UserBase = {
+  createdAt: Scalars['Date']['output'];
+  email: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  mediumPhoto: Scalars['String']['output'];
+  role: AppRole;
+  smallPhoto: Scalars['String']['output'];
+  status: AccountStatus;
+  username: Scalars['String']['output'];
+};
+
+export type UserWithProfile = UserBase & {
   __typename?: 'UserWithProfile';
   createdAt: Scalars['Date']['output'];
   email: Scalars['String']['output'];
   id: Scalars['String']['output'];
   largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
-  profile?: Maybe<Profile>;
-  role: Role;
+  profile: Profile;
+  role: AppRole;
   smallPhoto: Scalars['String']['output'];
+  status: AccountStatus;
   username: Scalars['String']['output'];
 };

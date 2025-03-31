@@ -1,5 +1,5 @@
 import { MercuriusContext } from "mercurius";
-import { CreateEventInput, CreateEventReponse, Mutation, MutationCreateEventArgs } from "../model/model";
+import { Mutation, MutationCreateEventArgs } from "../model/model";
 
 export default {
   Mutation: {
@@ -9,6 +9,7 @@ export default {
       { prisma, user }: MercuriusContext
     ): Promise<Mutation["createEvent"]> => {
       const { title, description, categories, cities, endAt, startAt } = createEventInput;
+      const { id, role } = user ?? {};
 
       try {
         const newEvent = await prisma.event.create({
@@ -34,11 +35,10 @@ export default {
             },
             users: {
               create: {
-                isHost: true,
-                isModerator: false,
+                role: "MEMBER",
                 user: {
                   connect: {
-                    id: user.id,
+                    id,
                   },
                 },
               },

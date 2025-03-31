@@ -1,13 +1,10 @@
 import { MercuriusContext } from "mercurius";
 import { Query } from "../model/model";
-import { cityValidator } from "../prisma/validators/city.validators";
 
 export default {
   Query: {
     getCities: async (_: unknown, args: unknown, { prisma }: MercuriusContext): Promise<Query["getCities"]> => {
-      return await prisma.city.findMany({
-        include: cityValidator,
-      });
+      return await prisma.city.findMany({});
     },
     getUsedCities: async (_: unknown, args: unknown, { prisma }: MercuriusContext): Promise<Query["getUsedCities"]> => {
       return await prisma.city.findMany({
@@ -16,7 +13,6 @@ export default {
             some: {},
           },
         },
-        include: cityValidator,
       });
     },
   },

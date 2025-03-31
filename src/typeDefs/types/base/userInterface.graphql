@@ -1,0 +1,10 @@
+interface UserBase {
+  id: String!
+  username: String!
+  email: String!
+  createdAt: Date!
+  role: AppRole!
+  status: AccountStatus!
+  smallPhoto: String!
+  mediumPhoto: String!
+}

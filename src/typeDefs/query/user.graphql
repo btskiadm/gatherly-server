@@ -1,5 +1,5 @@
 type Query {
   getUsers: [User!]!
   getUsersByUsername(username: String!): [User!]!
-  getUserWithProfile(username: String!): UserWithProfile
+  getUserWithProfile(userId: String!): UserWithProfile
 }

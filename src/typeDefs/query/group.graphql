@@ -1,3 +1,12 @@
+type CheckUserGroupPermission {
+  role: Role
+}
+
+type GetGroupsByUserIdReponse {
+  groups: [GroupTile!]!
+  count: Int!
+}
+
 type Query {
   getGroupTitles(title: String!): [Title!]!
   getGroupTiles(
@@ -6,11 +15,10 @@ type Query {
     titles: [String!]!
     minMembers: Int!
     maxMembers: Int!
-    remote: Boolean!
-    sponsored: Boolean!
-    verified: Boolean!
     numberOfMembers: String!
     dateOfAdding: String!
   ): [GroupTile!]!
   getGroupDetails(groupId: String!): GroupDetails
+  checkUserGroupPermissions(groupId: String!): CheckUserGroupPermission!
+  getGroupTilesByUserId(userId: String!, skip: Int, take: Int): GetGroupsByUserIdReponse!
 }

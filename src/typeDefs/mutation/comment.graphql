@@ -9,5 +9,5 @@ input AddGroupCommentInput {
 }
 
 type Mutation {
-  # addGroupComment(groupId: String, addGroupCommentInput: AddGroupCommentInput!): AddGroupCommentResponse!
+  addGroupComment(groupId: String!, addGroupCommentInput: AddGroupCommentInput!): AddGroupCommentResponse!
 }

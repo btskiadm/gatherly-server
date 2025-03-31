@@ -1,23 +1,11 @@
-import Fastify, { FastifyServerOptions } from "fastify";
+import fastifyCookie from "@fastify/cookie";
 import cors from "@fastify/cors";
+import fastifyJwt from "@fastify/jwt";
+import Fastify, { FastifyServerOptions } from "fastify";
 import mercurius from "mercurius";
-import { PrismaClient } from "@prisma/client";
 import { mercuriusOptions } from "./plugins/mercurius";
-import { env } from "./utils/env";
 import { pinoOptions } from "./plugins/pino";
-
-// export type MessagePopulated = Prisma.MessageGetPayload<{
-//   include: typeof messagePopulated;
-// }>;
-
-// export const messagePopulated = Prisma.validator<Prisma.MessageInclude>()({
-//   sender: {
-//     select: {
-//       id: true,
-//       username: true,
-//     },
-//   },
-// });
+import { env } from "./utils/env";
 
 const createServer = () => {
   const fastifyOptions: FastifyServerOptions = {
@@ -36,30 +24,38 @@ const createServer = () => {
 
   const fastify = Fastify(fastifyOptions);
 
-  fastify.register(mercurius, mercuriusOptions);
-
   fastify.register(cors, {
+    credentials: true,
     origin: (origin, cb) => {
       if (!origin) {
-        // prefetch
         cb(null, true);
         return;
       }
 
       try {
         const hostname = new URL(origin).hostname;
-
         if (env.ALLOWED_HOSTS.includes(hostname)) {
           cb(null, true);
           return;
         }
-
         cb(new Error("Not allowed"), false);
       } catch (err) {
         cb(new Error("Invalid origin"), false);
       }
     },
   });
+
+  fastify.register(fastifyCookie);
+
+  fastify.register(fastifyJwt, {
+    secret: "supersecret",
+    // cookie: {
+    //   cookieName: "token",
+    //   signed: false,
+    // },
+  });
+
+  fastify.register(mercurius, mercuriusOptions);
 
   return {
     start: async () => {

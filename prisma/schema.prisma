@@ -7,9 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
+enum AppRole {
   USER
+  MODERATOR
   ADMIN
+}
+
+enum Role {
+  MEMBER
+  MODERATOR
+  HOST
+}
+
+// Nowy enum, aby rozróżnić typ wydarzenia
+enum EventType {
+  GROUP
+  STANDALONE
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum GroupStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+// Nowy enum dla planów subskrypcyjnych
+enum SubscriptionPlanType {
+  FREE
+  PLUS
+  PREMIUM
 }
 
 model User {
@@ -17,24 +53,34 @@ model User {
   email      String    @unique
   username   String    @unique
   createdAt  DateTime  @default(now())
-  verifiedAt DateTime?
-  role       Role      @default(USER)
+
+  role   AppRole       @default(USER)
+  status AccountStatus @default(PENDING_VERIFICATION)
 
   smallPhoto  String
   mediumPhoto String
   largePhoto  String
 
-  profile  UserProfile?
-  groups   GroupUser[]
-  comments Comment[]
-  events   EventUser[]
+  profile    UserProfile?
+  groups     GroupUser[]
+  comments   Comment[]
+  events     EventUser[]
+  hostEvents Event[]
 }
 
 model UserProfile {
-  id     String @id @default(uuid())
-  bio    String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @unique
+  id          String                @id @default(uuid())
+  bio         String?
+  facebook    String?
+  twitter     String?
+  tiktok      String?
+  youtube     String?
+  instagram   String?
+  phoneNumber String?
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String                @unique
+  categories  CategoryUserProfile[]
+  cities      CityUserProfile[]
 }
 
 model Group {
@@ -44,8 +90,7 @@ model Group {
   title       String
   description String
 
-  isVerified     Boolean   @default(false)
-  sponsoredUntil DateTime?
+  status GroupStatus @default(PENDING_VERIFICATION)
 
   smallPhoto  String
   mediumPhoto String
@@ -56,6 +101,7 @@ model Group {
   cities     CityGroup[]
   comments   Comment[]
   events     Event[]
+  subscription GroupSubscription?
 }
 
 model Event {
@@ -67,8 +113,15 @@ model Event {
   startAt     DateTime
   endAt       DateTime
 
-  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  groupId String
+  eventType EventType @default(GROUP)
+
+  // Relacja do grupy – opcjonalna (dla wydarzeń w ramach grupy)
+  group   Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String?
+
+  // Relacja do użytkownika – gospodarz wydarzenia standalone
+  host   User?   @relation(fields: [hostId], references: [id])
+  hostId String?
 
   users      EventUser[]
   cities     CityEvent[]
@@ -89,25 +142,26 @@ model Comment {
 }
 
 model Category {
-  id     String          @id @default(uuid())
-  value  String          @unique
-  label  String          @unique
-  groups CategoryGroup[]
-  events CategoryEvent[]
+  id       String                @id @default(uuid())
+  value    String                @unique
+  label    String                @unique
+  groups   CategoryGroup[]
+  events   CategoryEvent[]
+  profiles CategoryUserProfile[]
 }
 
 model City {
-  id     String      @id @default(uuid())
-  value  String      @unique
-  label  String      @unique
-  groups CityGroup[]
-  events CityEvent[]
+  id       String            @id @default(uuid())
+  value    String            @unique
+  label    String            @unique
+  groups   CityGroup[]
+  events   CityEvent[]
+  profiles CityUserProfile[]
 }
 
 model GroupUser {
-  id          String  @id @default(uuid())
-  isHost      Boolean @default(false)
-  isModerator Boolean @default(false)
+  id   String @id @default(uuid())
+  role Role   @default(MEMBER)
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
@@ -115,13 +169,12 @@ model GroupUser {
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId String
 
-   @@unique([userId, groupId])
+  @@unique([userId, groupId])
 }
 
 model EventUser {
-  id          String  @id @default(uuid())
-  isHost      Boolean @default(false)
-  isModerator Boolean @default(false)
+  id   String @id @default(uuid())
+  role Role   @default(MEMBER)
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
@@ -147,6 +200,15 @@ model CategoryEvent {
   eventId    String
 }
 
+model CategoryUserProfile {
+  id String @id @default(uuid())
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+  profile    UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+}
+
 model CityGroup {
   id      String @id @default(uuid())
   city    City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
@@ -161,4 +223,21 @@ model CityEvent {
   cityId  String
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId String
+}
+
+model CityUserProfile {
+  id        String      @id @default(uuid())
+  city      City        @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  cityId    String
+  profile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String
+}
+
+model GroupSubscription {
+  id        String               @id @default(uuid())
+  plan      SubscriptionPlanType
+  startedAt DateTime             @default(now())
+  expiresAt DateTime
+  group     Group                @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String               @unique
 }

@@ -1,22 +1,20 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { MercuriusContext } from "mercurius";
 import {
   Category,
   City,
-  CreateGroupInput,
-  CreateGroupReponse,
   EventGroup,
   GroupDetails,
   GroupedEvents,
-  GroupTile,
   Mutation,
   MutationCreateGroupArgs,
   MutationJoinGroupArgs,
   MutationLeaveGroupArgs,
   Query,
+  QueryCheckUserGroupPermissionsArgs,
+  QueryGetGroupTilesByUserIdArgs,
   QueryGetGroupTilesArgs,
   QueryGetGroupTitlesArgs,
-  Title,
 } from "../model/model";
 import { env } from "../utils/env";
 
@@ -31,8 +29,6 @@ interface RawGroupRow {
   description: string;
   createdAt: Date;
   updatedAt: Date;
-  isVerified: boolean;
-  sponsoredUntil: Date | null;
   smallPhoto: string;
   mediumPhoto: string;
   largePhoto: string;
@@ -100,12 +96,94 @@ const combineConditions = (conditions: Prisma.Sql[]): Prisma.Sql => {
 
 export default {
   Query: {
-    // Wyszukuje grupy, których tytuł zawiera podany ciąg znaków.
-    getGroupTitles: async (
+    getGroupTilesByUserId: async (
       _: unknown,
-      { title }: QueryGetGroupTitlesArgs,
+      { userId, skip: _skip, take: _take }: QueryGetGroupTilesByUserIdArgs,
       { prisma }: MercuriusContext
-    ): Promise<Query["getGroupTitles"]> => {
+    ): Promise<Query["getGroupTilesByUserId"]> => {
+      const skip = _skip || 0;
+      const take = _take || 10;
+
+      const [userGroups, count] = await Promise.all([
+        prisma.groupUser.findMany({
+          where: {
+            userId,
+          },
+          include: {
+            group: {
+              include: {
+                categories: { include: { category: true } },
+                cities: { include: { city: true } },
+              },
+            },
+          },
+          skip,
+          take,
+          orderBy: {
+            group: {
+              createdAt: "desc",
+            },
+          },
+        }),
+        prisma.groupUser.count({
+          where: {
+            userId,
+          },
+        }),
+      ]);
+
+      const groups = userGroups.map(({ group }) => ({
+        id: group.id,
+        title: group.title,
+        description: group.description,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+
+        categories: group.categories.map((c) => c.category),
+        cities: group.cities.map((c) => c.city),
+        largePhoto: `${env.PHOTOS_BUCKET_URL}/${group.largePhoto}`,
+        mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${group.mediumPhoto}`,
+        smallPhoto: `${env.PHOTOS_BUCKET_URL}/${group.smallPhoto}`,
+
+        eventsCount: -1,
+        usersCount: -1,
+      }));
+
+      return {
+        groups,
+        count,
+      };
+    },
+
+    checkUserGroupPermissions: async (
+      _: unknown,
+      { groupId }: QueryCheckUserGroupPermissionsArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Query["checkUserGroupPermissions"]> => {
+      if (!user) {
+        return {
+          role: null,
+        };
+      }
+
+      const groupUser = await prisma.groupUser.findFirst({
+        where: {
+          user: {
+            id: user?.id,
+          },
+          group: {
+            id: groupId,
+          },
+        },
+      });
+
+      return {
+        role: groupUser?.role,
+      };
+    },
+
+    // Wyszukuje grupy, których tytuł zawiera podany ciąg znaków.
+    getGroupTitles: async (_: unknown, { title }: QueryGetGroupTitlesArgs, { prisma }: MercuriusContext) => {
       const groups = await prisma.group.findMany({
         where: {
           title: { contains: title },
@@ -123,18 +201,7 @@ export default {
     // Pobiera kafelki grup z wieloma opcjami filtrowania i sortowania.
     getGroupTiles: async (
       _: unknown,
-      {
-        categories,
-        titles,
-        cities,
-        sponsored,
-        verified,
-        remote,
-        minMembers,
-        maxMembers,
-        numberOfMembers,
-        dateOfAdding,
-      }: QueryGetGroupTilesArgs,
+      { categories, titles, cities, minMembers, maxMembers, numberOfMembers, dateOfAdding }: QueryGetGroupTilesArgs,
       { prisma }: MercuriusContext
     ): Promise<Query["getGroupTiles"]> => {
       const skip = 0,
@@ -144,23 +211,16 @@ export default {
       const titleCondition = buildTitleCondition(titles);
       const categoryCondition = buildCategoryCondition(categories);
       const citiesCondition = buildCitiesCondition(cities);
-      const sponsoredCondition = sponsored ? Prisma.sql`g."sponsoredUntil" >= NOW()` : Prisma.empty;
-      const verifiedCondition = verified ? Prisma.sql`g."isVerified" = true` : Prisma.empty;
-      const remoteCondition = remote
-        ? Prisma.sql`NOT EXISTS (
-            SELECT 1 FROM "CityGroup" cg_r
-            WHERE cg_r."groupId" = g."id"
-          )`
-        : Prisma.empty;
+      // const sponsoredCondition = sponsored ? Prisma.sql`g."sponsoredUntil" >= NOW()` : Prisma.empty;
+      // const verifiedCondition = verified ? Prisma.sql`g."isVerified" = true` : Prisma.empty;
+      // const remoteCondition = remote
+      //   ? Prisma.sql`NOT EXISTS (
+      //       SELECT 1 FROM "CityGroup" cg_r
+      //       WHERE cg_r."groupId" = g."id"
+      //     )`
+      //   : Prisma.empty;
 
-      const whereClause = combineConditions([
-        titleCondition,
-        categoryCondition,
-        citiesCondition,
-        sponsoredCondition,
-        verifiedCondition,
-        remoteCondition,
-      ]);
+      const whereClause = combineConditions([titleCondition, categoryCondition, citiesCondition]);
 
       // Ustalenie kolejności sortowania.
       const membersOrder = numberOfMembers === "ascending" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
@@ -174,8 +234,6 @@ export default {
           g."description",
           g."createdAt",
           g."updatedAt",
-          g."isVerified",
-          g."sponsoredUntil",
           g."smallPhoto",
           g."mediumPhoto",
           g."largePhoto",
@@ -224,13 +282,11 @@ export default {
         description: group.description,
         createdAt: group.createdAt,
         updatedAt: group.updatedAt,
-        isVerified: group.isVerified,
-        sponsoredUntil: group.sponsoredUntil,
+
         cities: group.cities,
         categories: group.categories,
         eventsCount: group.eventsCount,
-        membersCount: group.usersCount,
-        isSponsored: !!(group.sponsoredUntil && group.sponsoredUntil >= now),
+        usersCount: group.usersCount,
         largePhoto: `${env.PHOTOS_BUCKET_URL}/${group.largePhoto}`,
         mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${group.mediumPhoto}`,
         smallPhoto: `${env.PHOTOS_BUCKET_URL}/${group.smallPhoto}`,
@@ -268,7 +324,6 @@ export default {
       if (!group) return null;
 
       const now = new Date();
-      const isSponsored = !!(group.sponsoredUntil && group.sponsoredUntil >= now);
 
       // Funkcja grupująca zdarzenia według statusu.
       const getGroupedEvents = (
@@ -332,15 +387,11 @@ export default {
                 endAt: event.endAt,
                 startAt: event.startAt,
                 title: event.title,
-                sponsored: false, // todo: not implemented
-                verified: false, // todo: not implemented
-                remote: event.cities.length <= 0,
                 categories: event.categories.map(({ category }) => category),
                 cities: event.cities.map(({ city }) => city),
-                users: event.users.map(({ id, user, isHost, isModerator }) => ({
+                users: event.users.map(({ id, user, role }) => ({
                   id,
-                  isHost,
-                  isModerator,
+                  role,
                   user,
                 })),
               })
@@ -365,15 +416,11 @@ export default {
         endAt: event.endAt,
         startAt: event.startAt,
         title: event.title,
-        sponsored: false,
-        verified: false,
-        remote: event.cities.length <= 0,
         categories: event.categories.map(({ category }) => category),
         cities: event.cities.map(({ city }) => city),
-        users: event.users.map(({ id, user, isHost, isModerator }) => ({
+        users: event.users.map(({ id, user, role }) => ({
           id,
-          isHost,
-          isModerator,
+          role,
           user,
         })),
       });
@@ -401,15 +448,12 @@ export default {
         title: group.title,
         description: group.description,
         createdAt: group.createdAt,
-        sponsored: isSponsored,
-        verified: group.isVerified,
-        remote: group.cities.length <= 0,
+        updatedAt: group.updatedAt,
         cities: group.cities.map(({ city }) => city),
         categories: group.categories.map(({ category }) => category),
-        members: group.users.map(({ id, isHost, isModerator, user }) => ({
+        users: group.users.map(({ id, role, user }) => ({
           id,
-          isHost,
-          isModerator,
+          role,
           user,
         })),
         comments: group.comments,
@@ -459,11 +503,10 @@ export default {
             },
             users: {
               create: {
-                isHost: true,
-                isModerator: false,
+                role: Role.HOST,
                 user: {
                   connect: {
-                    id: user.id,
+                    id: user!.id,
                   },
                 },
               },
@@ -483,10 +526,11 @@ export default {
       { groupId }: MutationJoinGroupArgs,
       { prisma, user }: MercuriusContext
     ): Promise<Mutation["joinGroup"]> => {
+      console.dir({ user });
       try {
         await prisma.groupUser.create({
           data: {
-            user: { connect: { id: user.id } },
+            user: { connect: { id: user!.id } },
             group: { connect: { id: groupId } },
           },
         });
@@ -507,7 +551,7 @@ export default {
         await prisma.groupUser.delete({
           where: {
             userId_groupId: {
-              userId: user.id,
+              userId: user!.id,
               groupId: groupId,
             },
           },

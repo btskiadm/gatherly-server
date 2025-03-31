@@ -1,0 +1,8 @@
+type RefreshTokenResponse {
+  accessToken: String!
+  user: User!
+}
+
+type Mutation {
+  refreshToken: RefreshTokenResponse
+}

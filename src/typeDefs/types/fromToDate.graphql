@@ -1,5 +1,0 @@
-type FromToDate {
-  id: String!
-  startAt: String!
-  endAt: String!
-}
