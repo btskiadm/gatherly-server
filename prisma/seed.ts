@@ -2,14 +2,26 @@ import { AccountStatus, AppRole, GroupStatus, PrismaClient, Role, SubscriptionPl
 
 const prisma = new PrismaClient();
 
+/**
+ * Returns a random subset from the given array.
+ * @param array - The original array.
+ * @param count - Number of random items to select.
+ */
 function getRandomSubset<T>(array: T[], count: number): T[] {
   return array.sort(() => 0.5 - Math.random()).slice(0, count);
 }
 
+/**
+ * Generates Lorem Ipsum text with the specified number of words.
+ * @param wordCount - Number of words for the generated text.
+ */
 function generateLoremIpsum(wordCount: number): string {
-  const lorem =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi.";
-  const words = lorem.split(" ");
+  const lorem = `Do ex eu ipsum quis tempor cupidatat excepteur elit esse et. Non velit anim cupidatat consequat velit esse cupidatat non culpa in. Cupidatat exercitation aliqua aliquip aliqua consequat enim anim nisi veniam nisi Lorem ea ex id. Magna do non est cillum Lorem ut dolor do tempor laborum amet laboris do labore. Culpa amet dolore ut adipisicing exercitation. Sunt esse occaecat voluptate labore sit sint eiusmod tempor sunt non sit.
+Enim anim dolore officia elit culpa exercitation non commodo velit quis aliqua amet duis. Ipsum ex est pariatur consequat nisi labore est labore. Reprehenderit esse ea excepteur duis aliquip consectetur excepteur. Ut ut consectetur enim ipsum laborum duis nostrud proident exercitation eiusmod deserunt deserunt id reprehenderit. Id consequat exercitation pariatur non laboris consequat commodo ipsum id duis adipisicing dolore commodo laboris. Qui cillum amet id excepteur Lorem officia consectetur ipsum pariatur culpa esse in mollit deserunt. Id exercitation eu consequat aliquip ex ea enim aliquip Lorem officia nisi ea.
+Pariatur incididunt ad officia officia exercitation do ea reprehenderit velit pariatur. Nisi aute voluptate cupidatat adipisicing amet qui fugiat cillum eu aute enim. Et dolore consequat reprehenderit amet laborum pariatur quis qui exercitation id laboris. Anim est nostrud ex deserunt id eu sit cillum pariatur consequat enim ea.
+Enim deserunt nulla ex reprehenderit dolor est culpa quis veniam aliqua ipsum eu. Reprehenderit amet eiusmod quis commodo eiusmod cillum est non adipisicing magna aliquip anim. Fugiat voluptate excepteur anim aute esse.
+Est est magna ipsum occaecat eiusmod labore sint velit sit. Consequat fugiat dolore irure aliquip in quis consectetur. Qui laboris Lorem enim do in eu veniam mollit proident. Excepteur laborum nostrud sunt tempor id. Deserunt ullamco tempor excepteur eiusmod ullamco in quis aliquip qui quis ea elit commodo. Sint tempor culpa labore ipsum eiusmod commodo dolor consequat aliqua eiusmod reprehenderit consequat ullamco reprehenderit.`;
+
   let result = "";
   while (result.split(" ").length < wordCount) {
     result += lorem + " ";
@@ -18,10 +30,12 @@ function generateLoremIpsum(wordCount: number): string {
 }
 
 async function main() {
-  // Tworzymy 15 kategorii
+  // ============================================
+  // Seed Categories
+  // ============================================
   const categoriesData = Array.from({ length: 15 }, (_, i) => ({
     value: `cat${i + 1}`,
-    label: `Kategoria ${i + 1}`,
+    label: `Category ${i + 1}`,
   }));
 
   const categories = [];
@@ -31,10 +45,12 @@ async function main() {
   }
   console.log("✅ Categories seeded!");
 
-  // Tworzymy 15 miast
+  // ============================================
+  // Seed Cities
+  // ============================================
   const citiesData = Array.from({ length: 15 }, (_, i) => ({
     value: `city${i + 1}`,
-    label: `Miasto ${i + 1}`,
+    label: `City ${i + 1}`,
   }));
 
   const cities = [];
@@ -44,9 +60,12 @@ async function main() {
   }
   console.log("✅ Cities seeded!");
 
+  // ============================================
+  // Seed Admin and Moderator Users
+  // ============================================
   const users = [];
 
-  // Tworzenie admina
+  // Create Admin user
   const adminUser = await prisma.user.create({
     data: {
       id: "1418bfc2-9a78-4dd1-988c-25962eb51af2",
@@ -65,7 +84,7 @@ async function main() {
           twitter: "admin",
           youtube: "admin",
           instagram: "admin",
-          bio: "Bio admina",
+          bio: generateLoremIpsum(Math.floor(Math.random() * 100)),
           categories: {
             create: getRandomSubset(categories, Math.floor(Math.random() * 5) + 1).map((cat) => ({
               category: { connect: { id: cat.id } },
@@ -81,7 +100,7 @@ async function main() {
     },
   });
 
-  // Tworzenie moderatora
+  // Create Moderator user
   const moderatorUser = await prisma.user.create({
     data: {
       id: "c418bfc1-9a78-4dd1-988c-25962eb51aa2",
@@ -99,8 +118,8 @@ async function main() {
           tiktok: "moderator",
           twitter: "moderator",
           youtube: "moderator",
-          bio: "Bio moderator",
           instagram: "moderator",
+          bio: generateLoremIpsum(Math.floor(Math.random() * 100)),
           categories: {
             create: getRandomSubset(categories, Math.floor(Math.random() * 5) + 1).map((cat) => ({
               category: { connect: { id: cat.id } },
@@ -120,6 +139,10 @@ async function main() {
   users.push(moderatorUser);
   console.log("✅ Admin & Moderator seeded!");
 
+  // ============================================
+  // Seed Regular Users
+  // ============================================
+  // Function to determine account status based on index
   const accountStatus = (index: number): AccountStatus => {
     switch (index) {
       case 1:
@@ -135,16 +158,16 @@ async function main() {
     }
   };
 
-  // Tworzymy 50 użytkowników
+  // Create 50 users
   for (let i = 1; i <= 50; i++) {
     const user = await prisma.user.create({
       data: {
         email: `user${i}@user.com`,
         username: `user${i}`,
         role: AppRole.USER,
-        smallPhoto: `id/${i * 10}/128/128`,
-        mediumPhoto: `id/${i * 10}/256/256`,
-        largePhoto: `id/${i * 10}/512/512`,
+        smallPhoto: `id/${i + 3}/128/128`,
+        mediumPhoto: `id/${i + 3}/256/256`,
+        largePhoto: `id/${i + 3}/512/512`,
         status: accountStatus(i),
         profile: {
           create: {
@@ -154,7 +177,7 @@ async function main() {
             twitter: `user${i}`,
             youtube: `user${i}`,
             instagram: `user${i}`,
-            bio: `To jest bio użytkownika user${i}`,
+            bio: generateLoremIpsum(Math.floor(Math.random() * 100)),
             categories: {
               create: getRandomSubset(categories, Math.floor(Math.random() * 5) + 1).map((cat) => ({
                 category: { connect: { id: cat.id } },
@@ -171,9 +194,12 @@ async function main() {
     });
     users.push(user);
   }
-
   console.log("✅ Users seeded!");
 
+  // ============================================
+  // Seed Groups, Events, and Comments
+  // ============================================
+  // Function to determine group status based on index
   const groupStatus = (index: number): GroupStatus => {
     switch (index) {
       case 1:
@@ -190,29 +216,34 @@ async function main() {
   };
 
   const groups = [];
-  // Definiujemy dostępne plany subskrypcji
+
+  // Define available subscription plans for groups
   const subscriptionPlans: SubscriptionPlanType[] = [
     SubscriptionPlanType.FREE,
     SubscriptionPlanType.PLUS,
     SubscriptionPlanType.PREMIUM,
   ];
 
-  // Tworzymy 15 grup
+  // Create 15 groups along with their related events and comments
   for (let i = 1; i <= 15; i++) {
+    // Select random categories and cities for the group
     const randomCategories = getRandomSubset(categories, Math.floor(Math.random() * 5) + 1);
     const randomCities = getRandomSubset(cities, Math.floor(Math.random() * 5) + 1);
+
+    // Select random users as members for the group
     const membersCount = Math.floor(Math.random() * 3) + 3;
     const randomMembers = getRandomSubset(users, membersCount);
     const hostIndex = Math.floor(Math.random() * randomMembers.length);
     const moderatorIndex = Math.floor(Math.random() * randomMembers.length);
 
+    // Create the group
     const group = await prisma.group.create({
       data: {
-        title: `Grupa ${i}`,
+        title: `Group ${i} ${generateLoremIpsum(5)}`,
         description: generateLoremIpsum(30),
-        smallPhoto: `id/${i * 11}/128/128`,
-        mediumPhoto: `id/${i * 11}/256/256`,
-        largePhoto: `id/${i * 11}/512/512`,
+        smallPhoto: `id/${i + 100}/128/128`,
+        mediumPhoto: `id/${i + 100}/256/256`,
+        largePhoto: `id/${i + 100}/512/512`,
         status: groupStatus(i),
         categories: {
           create: randomCategories.map((cat) => ({
@@ -241,14 +272,9 @@ async function main() {
     });
     groups.push(group);
 
-    // Tworzymy subskrypcję dla grupy
+    // Create a subscription for the group
     const randomPlan = subscriptionPlans[Math.floor(Math.random() * subscriptionPlans.length)];
-    let expiryDays = 30;
-    if (randomPlan === SubscriptionPlanType.PLUS) {
-      expiryDays = 30;
-    } else if (randomPlan === SubscriptionPlanType.PREMIUM) {
-      expiryDays = 30;
-    }
+    const expiryDays = 30; // Both PLUS and PREMIUM use 30 days
     const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
     await prisma.groupSubscription.create({
       data: {
@@ -258,14 +284,14 @@ async function main() {
       },
     });
 
-    // Tworzymy 5 wydarzeń dla każdej grupy
+    // Create 5 events for each group
     for (let j = 1; j <= 5; j++) {
       const randomCategory = categories[Math.floor(Math.random() * categories.length)];
       const randomCity = cities[Math.floor(Math.random() * cities.length)];
       const eventUsersCount = Math.floor(Math.random() * 3) + 2;
       const randomEventUsers = getRandomSubset(users, eventUsersCount);
-      const hostIndex = Math.floor(Math.random() * randomEventUsers.length);
-      const moderatorIndex = Math.floor(Math.random() * randomMembers.length);
+      const eventHostIndex = Math.floor(Math.random() * randomEventUsers.length);
+      const eventModeratorIndex = Math.floor(Math.random() * randomMembers.length);
 
       const now = new Date();
       const startAt = new Date(now.getTime() + Math.floor(Math.random() * 7) * 86400000);
@@ -273,10 +299,13 @@ async function main() {
 
       await prisma.event.create({
         data: {
-          title: `Wydarzenie ${j} w grupie ${i}`,
+          title: `Event ${j} in Group ${i}`,
           description: generateLoremIpsum(40),
           startAt,
           endAt,
+          smallPhoto: `id/${j + 150}/128/128`,
+          mediumPhoto: `id/${j + 150}/256/256`,
+          largePhoto: `id/${j + 150}/512/512`,
           group: { connect: { id: group.id } },
           categories: { create: [{ category: { connect: { id: randomCategory.id } } }] },
           cities: { create: [{ city: { connect: { id: randomCity.id } } }] },
@@ -284,11 +313,11 @@ async function main() {
             create: randomEventUsers.map((user, index) => ({
               user: { connect: { id: user.id } },
               role:
-                moderatorIndex === hostIndex
+                eventModeratorIndex === eventHostIndex
                   ? Role.HOST
-                  : moderatorIndex === index
+                  : eventModeratorIndex === index
                   ? Role.MODERATOR
-                  : hostIndex === index
+                  : eventHostIndex === index
                   ? Role.HOST
                   : Role.MEMBER,
             })),
@@ -297,7 +326,7 @@ async function main() {
       });
     }
 
-    // Dodajemy komentarze do grupy
+    // Add comments to the group
     const commentCount = Math.floor(Math.random() * 3) + 2;
     for (let k = 1; k <= commentCount; k++) {
       const randomUser = users[Math.floor(Math.random() * users.length)];
@@ -311,22 +340,26 @@ async function main() {
       });
     }
   }
-
   console.log("✅ Groups & related data seeded!");
 
-  // Tworzymy 10 wydarzeń samodzielnych
+  // ============================================
+  // Seed Standalone Events (Not associated with any group)
+  // ============================================
   const standaloneEventsCount = 10;
   for (let i = 1; i <= standaloneEventsCount; i++) {
     const hostUser = users[Math.floor(Math.random() * users.length)];
     const randomCategory = categories[Math.floor(Math.random() * categories.length)];
     const randomCity = cities[Math.floor(Math.random() * cities.length)];
     let randomEventUsers = getRandomSubset(users, Math.floor(Math.random() * 3) + 2);
+    // Ensure the host is included among the event users
     if (!randomEventUsers.find((u) => u.id === hostUser.id)) {
       randomEventUsers.push(hostUser);
     }
 
     const now = new Date();
-    const startAt = new Date(now.getTime() + Math.floor(Math.random() * 7) * 86400000);
+    const startAt = new Date(
+      now.getTime() + Math.floor((Math.random() >= 0.5 ? -1 : 1) * Math.random() * 7) * 86400000
+    );
     const endAt = new Date(startAt.getTime() + 2 * 3600000);
 
     await prisma.event.create({
@@ -335,6 +368,10 @@ async function main() {
         description: generateLoremIpsum(40),
         startAt,
         endAt,
+        smallPhoto: `id/${i + 200}/128/128`,
+        mediumPhoto: `id/${i + 200}/256/256`,
+        largePhoto: `id/${i + 200}/512/512`,
+        canceled: false,
         eventType: "STANDALONE",
         host: { connect: { id: hostUser.id } },
         categories: { create: [{ category: { connect: { id: randomCategory.id } } }] },
@@ -348,10 +385,9 @@ async function main() {
       },
     });
   }
-
   console.log("✅ Standalone events seeded!");
-  console.log("🎉 Database seeding completed!");
 
+  console.log("🎉 Database seeding completed!");
   console.table(users);
 }
 

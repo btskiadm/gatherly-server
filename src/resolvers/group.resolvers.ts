@@ -3,7 +3,6 @@ import { MercuriusContext } from "mercurius";
 import {
   Category,
   City,
-  EventGroup,
   GroupDetails,
   GroupedEvents,
   Mutation,
@@ -15,8 +14,10 @@ import {
   QueryGetGroupTilesByUserIdArgs,
   QueryGetGroupTilesArgs,
   QueryGetGroupTitlesArgs,
+  EventTile,
 } from "../model/model";
 import { env } from "../utils/env";
+import { getPhotoUrl } from "../utils/photoUrl";
 
 // Typy dla sortowania.
 type NumberOfMembers = "ascending" | "descending";
@@ -114,6 +115,16 @@ export default {
               include: {
                 categories: { include: { category: true } },
                 cities: { include: { city: true } },
+                users: {
+                  select: {
+                    id: true,
+                  },
+                },
+                events: {
+                  select: {
+                    id: true,
+                  },
+                },
               },
             },
           },
@@ -141,12 +152,12 @@ export default {
 
         categories: group.categories.map((c) => c.category),
         cities: group.cities.map((c) => c.city),
-        largePhoto: `${env.PHOTOS_BUCKET_URL}/${group.largePhoto}`,
-        mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${group.mediumPhoto}`,
-        smallPhoto: `${env.PHOTOS_BUCKET_URL}/${group.smallPhoto}`,
+        largePhoto: getPhotoUrl(group.largePhoto),
+        mediumPhoto: getPhotoUrl(group.mediumPhoto),
+        smallPhoto: getPhotoUrl(group.smallPhoto),
 
-        eventsCount: -1,
-        usersCount: -1,
+        eventsCount: group.events.length,
+        usersCount: group.users.length,
       }));
 
       return {
@@ -287,9 +298,9 @@ export default {
         categories: group.categories,
         eventsCount: group.eventsCount,
         usersCount: group.usersCount,
-        largePhoto: `${env.PHOTOS_BUCKET_URL}/${group.largePhoto}`,
-        mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${group.mediumPhoto}`,
-        smallPhoto: `${env.PHOTOS_BUCKET_URL}/${group.smallPhoto}`,
+        largePhoto: getPhotoUrl(group.largePhoto),
+        mediumPhoto: getPhotoUrl(group.mediumPhoto),
+        smallPhoto: getPhotoUrl(group.smallPhoto),
       }));
     },
 
@@ -341,24 +352,44 @@ export default {
           cancelled: [] as EventWithInclude[],
         };
 
-        events.forEach((event) => {
+        for (const event of events) {
           if (event.canceled) {
             grouped.cancelled.push(event);
-            return;
-          }
-          const startAt = new Date(event.startAt);
-          const endAt = new Date(event.endAt);
+          } else {
+            const startAt = new Date(event.startAt);
+            const endAt = new Date(event.endAt);
 
-          if (now < startAt) {
-            grouped.upcoming.push(event);
-          } else if (startAt <= now && now <= endAt) {
-            grouped.pending.push(event);
-          } else if (now >= endAt) {
-            grouped.past.push(event);
+            if (now < startAt) {
+              grouped.upcoming.push(event);
+            } else if (startAt <= now && now <= endAt) {
+              grouped.pending.push(event);
+            } else if (now >= endAt) {
+              grouped.past.push(event);
+            }
           }
-        });
+        }
+
         return grouped;
       };
+
+      // Mapowanie zdarzeń do formatu EventGroup.
+      const mapEventToGroup = (event: EventWithInclude): EventTile => ({
+        id: event.id,
+        canceled: event.canceled,
+        createdAt: event.createdAt,
+        description: event.description,
+        endAt: event.endAt,
+        startAt: event.startAt,
+        title: event.title,
+        categories: event.categories.map(({ category }) => category),
+        cities: event.cities.map(({ city }) => city),
+        usersCount: event.users.length,
+        eventType: event.eventType,
+        largePhoto: getPhotoUrl(group.largePhoto),
+        mediumPhoto: getPhotoUrl(group.mediumPhoto),
+        smallPhoto: getPhotoUrl(group.smallPhoto),
+        updatedAt: event.updatedAt,
+      });
 
       // Grupowanie zdarzeń według miesiąca i roku.
       const groupEventsByMonth = (events: EventWithInclude[]): GroupedEvents[] => {
@@ -377,25 +408,7 @@ export default {
           return {
             __typename: "GroupedEvents",
             monthReference: new Date(year, month, 1).toISOString(),
-            events: events.map(
-              (event): EventGroup => ({
-                __typename: "EventGroup",
-                id: event.id,
-                canceled: event.canceled,
-                createdAt: event.createdAt,
-                description: event.description,
-                endAt: event.endAt,
-                startAt: event.startAt,
-                title: event.title,
-                categories: event.categories.map(({ category }) => category),
-                cities: event.cities.map(({ city }) => city),
-                users: event.users.map(({ id, user, role }) => ({
-                  id,
-                  role,
-                  user,
-                })),
-              })
-            ),
+            events: events.map(mapEventToGroup),
           };
         });
       };
@@ -406,26 +419,7 @@ export default {
       const pastGrouped = groupEventsByMonth(past);
       const cancelledGrouped = groupEventsByMonth(cancelled);
 
-      // Mapowanie zdarzeń do formatu EventGroup.
-      const mapEventToGroup = (event: EventWithInclude): EventGroup => ({
-        __typename: "EventGroup",
-        id: event.id,
-        canceled: event.canceled,
-        createdAt: event.createdAt,
-        description: event.description,
-        endAt: event.endAt,
-        startAt: event.startAt,
-        title: event.title,
-        categories: event.categories.map(({ category }) => category),
-        cities: event.cities.map(({ city }) => city),
-        users: event.users.map(({ id, user, role }) => ({
-          id,
-          role,
-          user,
-        })),
-      });
-
-      const eventsMapped: EventGroup[] = group.events.map(mapEventToGroup);
+      const eventsMapped: EventTile[] = group.events.map(mapEventToGroup);
 
       // Obliczanie sumarycznej liczby zdarzeń.
       const numOfEvents = (groups: GroupedEvents[]): number => groups.reduce((sum, g) => sum + g.events.length, 0);
@@ -468,9 +462,9 @@ export default {
         cancelledLength,
         eventsLength,
         rate: averageRate,
-        largePhoto: `${env.PHOTOS_BUCKET_URL}/${group.largePhoto}`,
-        mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${group.mediumPhoto}`,
-        smallPhoto: `${env.PHOTOS_BUCKET_URL}/${group.smallPhoto}`,
+        largePhoto: getPhotoUrl(group.largePhoto),
+        mediumPhoto: getPhotoUrl(group.mediumPhoto),
+        smallPhoto: getPhotoUrl(group.smallPhoto),
       };
     },
   },
@@ -526,7 +520,6 @@ export default {
       { groupId }: MutationJoinGroupArgs,
       { prisma, user }: MercuriusContext
     ): Promise<Mutation["joinGroup"]> => {
-      console.dir({ user });
       try {
         await prisma.groupUser.create({
           data: {

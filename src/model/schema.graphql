@@ -104,23 +104,53 @@ type Event {
   users: [EventUser!]!
 }
 
-type EventGroup {
+interface EventBase {
+  canceled: Boolean!
+  createdAt: Date!
+  description: String!
+  endAt: Date!
+  eventType: EventType!
+  id: String!
+  largePhoto: String!
+  mediumPhoto: String!
+  smallPhoto: String!
+  startAt: Date!
+  title: String!
+  updatedAt: Date!
+}
+
+type EventTile implements EventBase {
   canceled: Boolean!
   categories: [Category!]!
   cities: [City!]!
   createdAt: Date!
   description: String!
   endAt: Date!
+  eventType: EventType!
   id: String!
+  largePhoto: String!
+  mediumPhoto: String!
+  smallPhoto: String!
   startAt: Date!
   title: String!
-  users: [EventUser!]!
+  updatedAt: Date!
+  usersCount: Int!
+}
+
+enum EventType {
+  GROUP
+  STANDALONE
 }
 
 type EventUser {
   id: String!
   role: Role!
   user: User!
+}
+
+type GetEventTilesByUserIdReponse {
+  count: Int!
+  events: [EventTile!]!
 }
 
 type GetGroupCommentsResponse {
@@ -151,7 +181,7 @@ type GroupDetails implements GroupBase {
   comments: [Comment!]!
   createdAt: Date!
   description: String!
-  events: [EventGroup!]!
+  events: [EventTile!]!
   eventsLength: Int!
   id: String!
   largePhoto: String!
@@ -215,7 +245,7 @@ type GroupWithStatus implements GroupBase {
 }
 
 type GroupedEvents {
-  events: [EventGroup!]!
+  events: [EventTile!]!
   monthReference: String!
 }
 
@@ -264,6 +294,7 @@ type Query {
   checkUserGroupPermissions(groupId: String!): CheckUserGroupPermission!
   getCategories: [Category!]!
   getCities: [City!]!
+  getEventTilesByUserId(skip: Int, take: Int, userId: String!): GetEventTilesByUserIdReponse!
   getGroupComments(groupId: String!): GetGroupCommentsResponse!
   getGroupDetails(groupId: String!): GroupDetails
   getGroupTiles(categories: [String!]!, cities: [String!]!, dateOfAdding: String!, maxMembers: Int!, minMembers: Int!, numberOfMembers: String!, titles: [String!]!): [GroupTile!]!

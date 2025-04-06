@@ -1,0 +1,8 @@
+type GetEventTilesByUserIdReponse {
+  events: [EventTile!]!
+  count: Int!
+}
+
+type Query {
+  getEventTilesByUserId(userId: String!, skip: Int, take: Int): GetEventTilesByUserIdReponse!
+}
