@@ -3,6 +3,7 @@ import { MercuriusContext } from "mercurius";
 import {
   Category,
   City,
+  EventTile,
   GroupDetails,
   GroupedEvents,
   Mutation,
@@ -11,12 +12,10 @@ import {
   MutationLeaveGroupArgs,
   Query,
   QueryCheckUserGroupPermissionsArgs,
-  QueryGetGroupTilesByUserIdArgs,
   QueryGetGroupTilesArgs,
+  QueryGetGroupTilesByUserIdArgs,
   QueryGetGroupTitlesArgs,
-  EventTile,
 } from "../model/model";
-import { env } from "../utils/env";
 import { getPhotoUrl } from "../utils/photoUrl";
 
 // Typy dla sortowania.
@@ -393,11 +392,11 @@ export default {
 
       // Grupowanie zdarzeń według miesiąca i roku.
       const groupEventsByMonth = (events: EventWithInclude[]): GroupedEvents[] => {
-        const sorted = events.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const sorted = events.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
         const eventMap = new Map<string, EventWithInclude[]>();
 
         sorted.forEach((event) => {
-          const date = new Date(event.createdAt);
+          const date = new Date(event.startAt);
           const key = `${date.getFullYear()}-${date.getMonth()}`;
           if (!eventMap.has(key)) eventMap.set(key, []);
           eventMap.get(key)?.push(event);

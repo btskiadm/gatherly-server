@@ -2,18 +2,15 @@ import { AccountStatus, AppRole, GroupStatus, PrismaClient, Role, SubscriptionPl
 
 const prisma = new PrismaClient();
 
-/**
- * Returns a random subset from the given array.
- * @param array - The original array.
- * @param count - Number of random items to select.
- */
+// ============================================
+// Helper functions
+// ============================================
 function getRandomSubset<T>(array: T[], count: number): T[] {
   return array.sort(() => 0.5 - Math.random()).slice(0, count);
 }
 
 /**
  * Generates Lorem Ipsum text with the specified number of words.
- * @param wordCount - Number of words for the generated text.
  */
 function generateLoremIpsum(wordCount: number): string {
   const lorem = `Do ex eu ipsum quis tempor cupidatat excepteur elit esse et. Non velit anim cupidatat consequat velit esse cupidatat non culpa in. Cupidatat exercitation aliqua aliquip aliqua consequat enim anim nisi veniam nisi Lorem ea ex id. Magna do non est cillum Lorem ut dolor do tempor laborum amet laboris do labore. Culpa amet dolore ut adipisicing exercitation. Sunt esse occaecat voluptate labore sit sint eiusmod tempor sunt non sit.
@@ -27,6 +24,17 @@ Est est magna ipsum occaecat eiusmod labore sint velit sit. Consequat fugiat dol
     result += lorem + " ";
   }
   return result.split(" ").slice(0, wordCount).join(" ");
+}
+
+// ============================================
+// Definicja zakresu dat dla eventów, grup, komentarzy itd.
+// ============================================
+const now = new Date();
+const rangeStart = new Date(now.getFullYear(), now.getMonth() - 1, 1); // początek poprzedniego miesiąca
+const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0); // koniec następnego miesiąca
+
+function getRandomDate(start: Date, end: Date): Date {
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
 async function main() {
@@ -142,7 +150,6 @@ async function main() {
   // ============================================
   // Seed Regular Users
   // ============================================
-  // Function to determine account status based on index
   const accountStatus = (index: number): AccountStatus => {
     switch (index) {
       case 1:
@@ -158,7 +165,6 @@ async function main() {
     }
   };
 
-  // Create 50 users
   for (let i = 1; i <= 50; i++) {
     const user = await prisma.user.create({
       data: {
@@ -199,7 +205,6 @@ async function main() {
   // ============================================
   // Seed Groups, Events, and Comments
   // ============================================
-  // Function to determine group status based on index
   const groupStatus = (index: number): GroupStatus => {
     switch (index) {
       case 1:
@@ -216,27 +221,22 @@ async function main() {
   };
 
   const groups = [];
-
-  // Define available subscription plans for groups
   const subscriptionPlans: SubscriptionPlanType[] = [
     SubscriptionPlanType.FREE,
     SubscriptionPlanType.PLUS,
     SubscriptionPlanType.PREMIUM,
   ];
 
-  // Create 15 groups along with their related events and comments
+  // Tworzymy 15 grup wraz z eventami i komentarzami
   for (let i = 1; i <= 15; i++) {
-    // Select random categories and cities for the group
     const randomCategories = getRandomSubset(categories, Math.floor(Math.random() * 5) + 1);
     const randomCities = getRandomSubset(cities, Math.floor(Math.random() * 5) + 1);
 
-    // Select random users as members for the group
     const membersCount = Math.floor(Math.random() * 3) + 3;
     const randomMembers = getRandomSubset(users, membersCount);
     const hostIndex = Math.floor(Math.random() * randomMembers.length);
     const moderatorIndex = Math.floor(Math.random() * randomMembers.length);
 
-    // Create the group
     const group = await prisma.group.create({
       data: {
         title: `Group ${i} ${generateLoremIpsum(5)}`,
@@ -245,6 +245,7 @@ async function main() {
         mediumPhoto: `id/${i + 100}/256/256`,
         largePhoto: `id/${i + 100}/512/512`,
         status: groupStatus(i),
+        createdAt: getRandomDate(rangeStart, rangeEnd),
         categories: {
           create: randomCategories.map((cat) => ({
             category: { connect: { id: cat.id } },
@@ -272,9 +273,9 @@ async function main() {
     });
     groups.push(group);
 
-    // Create a subscription for the group
+    // Tworzymy subskrypcję dla grupy
     const randomPlan = subscriptionPlans[Math.floor(Math.random() * subscriptionPlans.length)];
-    const expiryDays = 30; // Both PLUS and PREMIUM use 30 days
+    const expiryDays = 30;
     const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
     await prisma.groupSubscription.create({
       data: {
@@ -284,7 +285,7 @@ async function main() {
       },
     });
 
-    // Create 5 events for each group
+    // Tworzymy 5 eventów dla każdej grupy
     for (let j = 1; j <= 5; j++) {
       const randomCategory = categories[Math.floor(Math.random() * categories.length)];
       const randomCity = cities[Math.floor(Math.random() * cities.length)];
@@ -293,8 +294,7 @@ async function main() {
       const eventHostIndex = Math.floor(Math.random() * randomEventUsers.length);
       const eventModeratorIndex = Math.floor(Math.random() * randomMembers.length);
 
-      const now = new Date();
-      const startAt = new Date(now.getTime() + Math.floor(Math.random() * 7) * 86400000);
+      const startAt = getRandomDate(rangeStart, rangeEnd);
       const endAt = new Date(startAt.getTime() + 2 * 3600000);
 
       await prisma.event.create({
@@ -326,7 +326,7 @@ async function main() {
       });
     }
 
-    // Add comments to the group
+    // Dodajemy komentarze do grupy
     const commentCount = Math.floor(Math.random() * 3) + 2;
     for (let k = 1; k <= commentCount; k++) {
       const randomUser = users[Math.floor(Math.random() * users.length)];
@@ -336,6 +336,7 @@ async function main() {
           content: generateLoremIpsum(20),
           user: { connect: { id: randomUser.id } },
           group: { connect: { id: group.id } },
+          createdAt: getRandomDate(rangeStart, rangeEnd),
         },
       });
     }
@@ -351,15 +352,11 @@ async function main() {
     const randomCategory = categories[Math.floor(Math.random() * categories.length)];
     const randomCity = cities[Math.floor(Math.random() * cities.length)];
     let randomEventUsers = getRandomSubset(users, Math.floor(Math.random() * 3) + 2);
-    // Ensure the host is included among the event users
     if (!randomEventUsers.find((u) => u.id === hostUser.id)) {
       randomEventUsers.push(hostUser);
     }
 
-    const now = new Date();
-    const startAt = new Date(
-      now.getTime() + Math.floor((Math.random() >= 0.5 ? -1 : 1) * Math.random() * 7) * 86400000
-    );
+    const startAt = getRandomDate(rangeStart, rangeEnd);
     const endAt = new Date(startAt.getTime() + 2 * 3600000);
 
     await prisma.event.create({

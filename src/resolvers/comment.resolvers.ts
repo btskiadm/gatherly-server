@@ -20,6 +20,9 @@ export default {
         include: {
           user: true,
         },
+        orderBy: {
+          createdAt: "desc",
+        },
       });
 
       return {
