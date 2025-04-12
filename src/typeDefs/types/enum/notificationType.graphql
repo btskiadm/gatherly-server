@@ -1,0 +1,6 @@
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  GROUP_INVITE
+  EVENT_INVITE
+}

@@ -1,17 +1,15 @@
-import { AccountStatus, AppRole, GroupStatus, PrismaClient, Role, SubscriptionPlanType } from "@prisma/client";
+import { PrismaClient, AppRole, AccountStatus, GroupStatus, Role, SubscriptionPlanType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 // ============================================
 // Helper functions
 // ============================================
+
 function getRandomSubset<T>(array: T[], count: number): T[] {
   return array.sort(() => 0.5 - Math.random()).slice(0, count);
 }
 
-/**
- * Generates Lorem Ipsum text with the specified number of words.
- */
 function generateLoremIpsum(wordCount: number): string {
   const lorem = `Do ex eu ipsum quis tempor cupidatat excepteur elit esse et. Non velit anim cupidatat consequat velit esse cupidatat non culpa in. Cupidatat exercitation aliqua aliquip aliqua consequat enim anim nisi veniam nisi Lorem ea ex id. Magna do non est cillum Lorem ut dolor do tempor laborum amet laboris do labore. Culpa amet dolore ut adipisicing exercitation. Sunt esse occaecat voluptate labore sit sint eiusmod tempor sunt non sit.
 Enim anim dolore officia elit culpa exercitation non commodo velit quis aliqua amet duis. Ipsum ex est pariatur consequat nisi labore est labore. Reprehenderit esse ea excepteur duis aliquip consectetur excepteur. Ut ut consectetur enim ipsum laborum duis nostrud proident exercitation eiusmod deserunt deserunt id reprehenderit. Id consequat exercitation pariatur non laboris consequat commodo ipsum id duis adipisicing dolore commodo laboris. Qui cillum amet id excepteur Lorem officia consectetur ipsum pariatur culpa esse in mollit deserunt. Id exercitation eu consequat aliquip ex ea enim aliquip Lorem officia nisi ea.
@@ -26,16 +24,23 @@ Est est magna ipsum occaecat eiusmod labore sint velit sit. Consequat fugiat dol
   return result.split(" ").slice(0, wordCount).join(" ");
 }
 
+function getRandomDate(start: Date, end: Date): Date {
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+}
+
+function getRandomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 // ============================================
-// Definicja zakresu dat dla eventów, grup, komentarzy itd.
+// Ustalenie zakresu dat dla eventów itp.
 // ============================================
 const now = new Date();
 const rangeStart = new Date(now.getFullYear(), now.getMonth() - 1, 1); // początek poprzedniego miesiąca
 const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0); // koniec następnego miesiąca
 
-function getRandomDate(start: Date, end: Date): Date {
-  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-}
+// Tablica do przechowywania utworzonych użytkowników
+const users: any[] = [];
 
 async function main() {
   // ============================================
@@ -71,8 +76,6 @@ async function main() {
   // ============================================
   // Seed Admin and Moderator Users
   // ============================================
-  const users = [];
-
   // Create Admin user
   const adminUser = await prisma.user.create({
     data: {
@@ -92,14 +95,14 @@ async function main() {
           twitter: "admin",
           youtube: "admin",
           instagram: "admin",
-          bio: generateLoremIpsum(Math.floor(Math.random() * 100)),
+          bio: generateLoremIpsum(getRandomInt(20, 100)),
           categories: {
-            create: getRandomSubset(categories, Math.floor(Math.random() * 5) + 1).map((cat) => ({
+            create: getRandomSubset(categories, getRandomInt(1, 5)).map((cat) => ({
               category: { connect: { id: cat.id } },
             })),
           },
           cities: {
-            create: getRandomSubset(cities, Math.floor(Math.random() * 5) + 1).map((city) => ({
+            create: getRandomSubset(cities, getRandomInt(1, 5)).map((city) => ({
               city: { connect: { id: city.id } },
             })),
           },
@@ -127,14 +130,14 @@ async function main() {
           twitter: "moderator",
           youtube: "moderator",
           instagram: "moderator",
-          bio: generateLoremIpsum(Math.floor(Math.random() * 100)),
+          bio: generateLoremIpsum(getRandomInt(20, 100)),
           categories: {
-            create: getRandomSubset(categories, Math.floor(Math.random() * 5) + 1).map((cat) => ({
+            create: getRandomSubset(categories, getRandomInt(1, 5)).map((cat) => ({
               category: { connect: { id: cat.id } },
             })),
           },
           cities: {
-            create: getRandomSubset(cities, Math.floor(Math.random() * 5) + 1).map((city) => ({
+            create: getRandomSubset(cities, getRandomInt(1, 5)).map((city) => ({
               city: { connect: { id: city.id } },
             })),
           },
@@ -151,7 +154,7 @@ async function main() {
   // Seed Regular Users
   // ============================================
   const accountStatus = (index: number): AccountStatus => {
-    switch (index) {
+    switch (index % 5) {
       case 1:
         return "ACTIVE";
       case 2:
@@ -171,10 +174,10 @@ async function main() {
         email: `user${i}@user.com`,
         username: `user${i}`,
         role: AppRole.USER,
+        status: accountStatus(i),
         smallPhoto: `id/${i + 3}/128/128`,
         mediumPhoto: `id/${i + 3}/256/256`,
         largePhoto: `id/${i + 3}/512/512`,
-        status: accountStatus(i),
         profile: {
           create: {
             facebook: `user${i}`,
@@ -183,14 +186,14 @@ async function main() {
             twitter: `user${i}`,
             youtube: `user${i}`,
             instagram: `user${i}`,
-            bio: generateLoremIpsum(Math.floor(Math.random() * 100)),
+            bio: generateLoremIpsum(getRandomInt(20, 100)),
             categories: {
-              create: getRandomSubset(categories, Math.floor(Math.random() * 5) + 1).map((cat) => ({
+              create: getRandomSubset(categories, getRandomInt(1, 5)).map((cat) => ({
                 category: { connect: { id: cat.id } },
               })),
             },
             cities: {
-              create: getRandomSubset(cities, Math.floor(Math.random() * 5) + 1).map((city) => ({
+              create: getRandomSubset(cities, getRandomInt(1, 5)).map((city) => ({
                 city: { connect: { id: city.id } },
               })),
             },
@@ -200,13 +203,13 @@ async function main() {
     });
     users.push(user);
   }
-  console.log("✅ Users seeded!");
+  console.log("✅ Regular users seeded!");
 
   // ============================================
   // Seed Groups, Events, and Comments
   // ============================================
   const groupStatus = (index: number): GroupStatus => {
-    switch (index) {
+    switch (index % 5) {
       case 1:
         return "ACTIVE";
       case 2:
@@ -229,13 +232,13 @@ async function main() {
 
   // Tworzymy 15 grup wraz z eventami i komentarzami
   for (let i = 1; i <= 15; i++) {
-    const randomCategories = getRandomSubset(categories, Math.floor(Math.random() * 5) + 1);
-    const randomCities = getRandomSubset(cities, Math.floor(Math.random() * 5) + 1);
+    const randomCategories = getRandomSubset(categories, getRandomInt(1, 5));
+    const randomCities = getRandomSubset(cities, getRandomInt(1, 5));
 
-    const membersCount = Math.floor(Math.random() * 3) + 3;
+    const membersCount = getRandomInt(3, 5);
     const randomMembers = getRandomSubset(users, membersCount);
-    const hostIndex = Math.floor(Math.random() * randomMembers.length);
-    const moderatorIndex = Math.floor(Math.random() * randomMembers.length);
+    const hostIndex = getRandomInt(0, randomMembers.length - 1);
+    const moderatorIndex = getRandomInt(0, randomMembers.length - 1);
 
     const group = await prisma.group.create({
       data: {
@@ -274,7 +277,7 @@ async function main() {
     groups.push(group);
 
     // Tworzymy subskrypcję dla grupy
-    const randomPlan = subscriptionPlans[Math.floor(Math.random() * subscriptionPlans.length)];
+    const randomPlan = subscriptionPlans[getRandomInt(0, subscriptionPlans.length - 1)];
     const expiryDays = 30;
     const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
     await prisma.groupSubscription.create({
@@ -287,12 +290,12 @@ async function main() {
 
     // Tworzymy 5 eventów dla każdej grupy
     for (let j = 1; j <= 5; j++) {
-      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-      const randomCity = cities[Math.floor(Math.random() * cities.length)];
-      const eventUsersCount = Math.floor(Math.random() * 3) + 2;
+      const randomCategory = categories[getRandomInt(0, categories.length - 1)];
+      const randomCity = cities[getRandomInt(0, cities.length - 1)];
+      const eventUsersCount = getRandomInt(2, 4);
       const randomEventUsers = getRandomSubset(users, eventUsersCount);
-      const eventHostIndex = Math.floor(Math.random() * randomEventUsers.length);
-      const eventModeratorIndex = Math.floor(Math.random() * randomMembers.length);
+      const eventHostIndex = getRandomInt(0, randomEventUsers.length - 1);
+      const eventModeratorIndex = getRandomInt(0, randomMembers.length - 1);
 
       const startAt = getRandomDate(rangeStart, rangeEnd);
       const endAt = new Date(startAt.getTime() + 2 * 3600000);
@@ -327,12 +330,12 @@ async function main() {
     }
 
     // Dodajemy komentarze do grupy
-    const commentCount = Math.floor(Math.random() * 3) + 2;
+    const commentCount = getRandomInt(2, 4);
     for (let k = 1; k <= commentCount; k++) {
-      const randomUser = users[Math.floor(Math.random() * users.length)];
+      const randomUser = users[getRandomInt(0, users.length - 1)];
       await prisma.comment.create({
         data: {
-          rate: Math.floor(Math.random() * 5) + 1,
+          rate: getRandomInt(1, 5),
           content: generateLoremIpsum(20),
           user: { connect: { id: randomUser.id } },
           group: { connect: { id: group.id } },
@@ -348,10 +351,11 @@ async function main() {
   // ============================================
   const standaloneEventsCount = 10;
   for (let i = 1; i <= standaloneEventsCount; i++) {
-    const hostUser = users[Math.floor(Math.random() * users.length)];
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-    const randomCity = cities[Math.floor(Math.random() * cities.length)];
-    let randomEventUsers = getRandomSubset(users, Math.floor(Math.random() * 3) + 2);
+    const hostUser = users[getRandomInt(0, users.length - 1)];
+    const randomCategory = categories[getRandomInt(0, categories.length - 1)];
+    const randomCity = cities[getRandomInt(0, cities.length - 1)];
+    let randomEventUsers = getRandomSubset(users, getRandomInt(2, 4));
+    // Upewnij się, że gospodarz jest obecny w liście uczestników
     if (!randomEventUsers.find((u) => u.id === hostUser.id)) {
       randomEventUsers.push(hostUser);
     }
@@ -384,8 +388,58 @@ async function main() {
   }
   console.log("✅ Standalone events seeded!");
 
+  // ============================================
+  // Rozszerzenie seeda o znajomych
+  // ============================================
+  // Tablica możliwych statusów zaproszenia do znajomych
+  const friendRequestStatuses: ("ACCEPTED" | "PENDING" | "DECLINED")[] = ["ACCEPTED", "PENDING", "DECLINED"];
+
+  // Dla każdego użytkownika tworzymy losowo od 0 do 20 znajomych spośród użytkowników o wyższym indeksie
+  for (let i = 0; i < users.length; i++) {
+    const currentUser = users[i];
+    const friendCount = getRandomInt(0, 20);
+    // Aby uniknąć duplikacji, wybieramy tylko spośród użytkowników o wyższym indeksie
+    const candidates = users.slice(i + 1);
+    const shuffledCandidates = candidates.sort(() => Math.random() - 0.5);
+    const selectedCandidates = shuffledCandidates.slice(0, friendCount);
+
+    for (const friend of selectedCandidates) {
+      const status = friendRequestStatuses[getRandomInt(0, friendRequestStatuses.length - 1)];
+      try {
+        if (status === "ACCEPTED") {
+          // Tworzymy rekord zaproszenia z zaakceptowanym statusem
+          await prisma.friendRequest.create({
+            data: {
+              sender: { connect: { id: currentUser.id } },
+              receiver: { connect: { id: friend.id } },
+              status: status,
+            },
+          });
+          // Tworzymy rekord znajomości – pamiętaj, że relacja symetryczna (przyjmujemy konwencję: zapisujemy parę tylko raz)
+          await prisma.friendship.create({
+            data: {
+              user1: { connect: { id: currentUser.id } },
+              user2: { connect: { id: friend.id } },
+            },
+          });
+        } else {
+          // Dla statusu PENDING lub DECLINED tworzymy jedynie zaproszenie
+          await prisma.friendRequest.create({
+            data: {
+              sender: { connect: { id: currentUser.id } },
+              receiver: { connect: { id: friend.id } },
+              status: status,
+            },
+          });
+        }
+      } catch (error) {
+        console.error(`Błąd przy tworzeniu znajomości dla użytkowników ${currentUser.id} i ${friend.id}:`, error);
+      }
+    }
+  }
+  console.log("✅ Friend relationships seeded!");
+
   console.log("🎉 Database seeding completed!");
-  console.table(users);
 }
 
 main()

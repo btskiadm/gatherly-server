@@ -1,5 +1,16 @@
+type GetUserGroupTilesReponse {
+  userGroupTiles: [UserGroupTile!]!
+  count: Int!
+}
+
+type UserGroupTile {
+  role: Role!
+  userTile: UserTile!
+}
+
 type Query {
   getUsers: [User!]!
   getUsersByUsername(username: String!): [User!]!
   getUserWithProfile(userId: String!): UserWithProfile
+  getUserGroupTiles(groupId: String!, skip: Int!, take: Int!, search: String): GetUserGroupTilesReponse!
 }

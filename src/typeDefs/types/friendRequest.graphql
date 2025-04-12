@@ -1,0 +1,8 @@
+type FriendRequest {
+  id: ID!
+  sender: User!
+  receiver: User!
+  status: FriendRequestStatus!
+  createdAt: Date!
+  updatedAt: Date!
+}

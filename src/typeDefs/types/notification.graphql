@@ -1,0 +1,7 @@
+type Notification {
+  id: ID!
+  type: NotificationType!
+  data: JSON
+  read: Boolean!
+  createdAt: Date!
+}

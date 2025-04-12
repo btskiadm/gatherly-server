@@ -1,0 +1,8 @@
+type NotificationsResponse {
+  notifications: [Notification!]!
+  count: Int!
+}
+
+type Query {
+  notifications(skip: Int!, take: Int!): Int!
+}

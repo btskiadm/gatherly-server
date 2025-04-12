@@ -20,6 +20,8 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   Date: { input: any; output: any; }
+  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
+  JSON: { input: any; output: any; }
 };
 
 export type AccountStatus =
@@ -81,6 +83,11 @@ export type Comment = {
   id: Scalars['String']['output'];
   rate: Scalars['Float']['output'];
   user: User;
+};
+
+export type CommentsData = {
+  __typename?: 'CommentsData';
+  rate: Scalars['Float']['output'];
 };
 
 export type CreateEventInput = {
@@ -175,21 +182,76 @@ export type EventUser = {
   user: User;
 };
 
+export type Friend = {
+  __typename?: 'Friend';
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  user: User;
+};
+
+export type FriendRequest = {
+  __typename?: 'FriendRequest';
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  receiver: User;
+  sender: User;
+  status: FriendRequestStatus;
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type FriendRequestStatus =
+  | 'ACCEPTED'
+  | 'DECLINED'
+  | 'PENDING';
+
+export type Friendship = {
+  __typename?: 'Friendship';
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  user1: User;
+  user2: User;
+};
+
 export type GetEventTilesByUserIdReponse = {
   __typename?: 'GetEventTilesByUserIdReponse';
   count: Scalars['Int']['output'];
   events: Array<EventTile>;
 };
 
+export type GetFriendsListResponse = {
+  __typename?: 'GetFriendsListResponse';
+  count: Scalars['Int']['output'];
+  friends: Array<Friend>;
+};
+
 export type GetGroupCommentsResponse = {
   __typename?: 'GetGroupCommentsResponse';
   comments: Array<Comment>;
+  count: Scalars['Int']['output'];
 };
 
 export type GetGroupsByUserIdReponse = {
   __typename?: 'GetGroupsByUserIdReponse';
   count: Scalars['Int']['output'];
   groups: Array<GroupTile>;
+};
+
+export type GetReceivedFriendRequestsResponse = {
+  __typename?: 'GetReceivedFriendRequestsResponse';
+  count: Scalars['Int']['output'];
+  friendRequests: Array<FriendRequest>;
+};
+
+export type GetSentFriendRequestsReponse = {
+  __typename?: 'GetSentFriendRequestsReponse';
+  count: Scalars['Int']['output'];
+  friendRequests: Array<FriendRequest>;
+};
+
+export type GetUserGroupTilesReponse = {
+  __typename?: 'GetUserGroupTilesReponse';
+  count: Scalars['Int']['output'];
+  userGroupTiles: Array<UserGroupTile>;
 };
 
 export type GroupBase = {
@@ -205,11 +267,11 @@ export type GroupBase = {
 
 export type GroupDetails = GroupBase & {
   __typename?: 'GroupDetails';
-  cancelled: Array<GroupedEvents>;
-  cancelledLength: Scalars['Int']['output'];
+  canceled: Array<GroupedEvents>;
+  canceledLength: Scalars['Int']['output'];
   categories: Array<Category>;
   cities: Array<City>;
-  comments: Array<Comment>;
+  commentsData: CommentsData;
   createdAt: Scalars['Date']['output'];
   description: Scalars['String']['output'];
   events: Array<EventTile>;
@@ -221,13 +283,12 @@ export type GroupDetails = GroupBase & {
   pastLength: Scalars['Int']['output'];
   pending: Array<GroupedEvents>;
   pendingLength?: Maybe<Scalars['Int']['output']>;
-  rate: Scalars['Float']['output'];
   smallPhoto: Scalars['String']['output'];
   title: Scalars['String']['output'];
   upcoming: Array<GroupedEvents>;
   upcomingLength: Scalars['Int']['output'];
   updatedAt: Scalars['Date']['output'];
-  users: Array<GroupUser>;
+  usersData: UsersData;
 };
 
 export type GroupStatus =
@@ -306,20 +367,47 @@ export type LogoutResponse = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  acceptFriendRequest: Friendship;
   addGroupComment: AddGroupCommentResponse;
+  addNotification: Scalars['Boolean']['output'];
+  cancelFriendRequest: FriendRequest;
+  cancelFriendship: Friendship;
   createEvent: CreateEventReponse;
   createGroup: CreateGroupReponse;
+  declineFriendRequest: FriendRequest;
   joinGroup: JoinGroupReponse;
   leaveGroup: LeaveGroupReponse;
   login?: Maybe<LoginResponse>;
   logout?: Maybe<LogoutResponse>;
+  markAsRead: Notification;
   refreshToken?: Maybe<RefreshTokenResponse>;
+  sendFriendRequest: FriendRequest;
+};
+
+
+export type MutationAcceptFriendRequestArgs = {
+  requestId: Scalars['String']['input'];
 };
 
 
 export type MutationAddGroupCommentArgs = {
   addGroupCommentInput: AddGroupCommentInput;
   groupId: Scalars['String']['input'];
+};
+
+
+export type MutationAddNotificationArgs = {
+  recipientId: Scalars['String']['input'];
+};
+
+
+export type MutationCancelFriendRequestArgs = {
+  requestId: Scalars['String']['input'];
+};
+
+
+export type MutationCancelFriendshipArgs = {
+  friendshipId: Scalars['String']['input'];
 };
 
 
@@ -331,6 +419,11 @@ export type MutationCreateEventArgs = {
 
 export type MutationCreateGroupArgs = {
   createGroupInput: CreateGroupInput;
+};
+
+
+export type MutationDeclineFriendRequestArgs = {
+  requestId: Scalars['String']['input'];
 };
 
 
@@ -347,6 +440,37 @@ export type MutationLeaveGroupArgs = {
 export type MutationLoginArgs = {
   password: Scalars['String']['input'];
   username: Scalars['String']['input'];
+};
+
+
+export type MutationMarkAsReadArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSendFriendRequestArgs = {
+  receiverId: Scalars['String']['input'];
+};
+
+export type Notification = {
+  __typename?: 'Notification';
+  createdAt: Scalars['Date']['output'];
+  data?: Maybe<Scalars['JSON']['output']>;
+  id: Scalars['ID']['output'];
+  read: Scalars['Boolean']['output'];
+  type: NotificationType;
+};
+
+export type NotificationType =
+  | 'EVENT_INVITE'
+  | 'FRIEND_ACCEPTED'
+  | 'FRIEND_REQUEST'
+  | 'GROUP_INVITE';
+
+export type NotificationsResponse = {
+  __typename?: 'NotificationsResponse';
+  count: Scalars['Int']['output'];
+  notifications: Array<Notification>;
 };
 
 export type Profile = {
@@ -369,18 +493,23 @@ export type Query = {
   getCategories: Array<Category>;
   getCities: Array<City>;
   getEventTilesByUserId: GetEventTilesByUserIdReponse;
+  getFriendsList: GetFriendsListResponse;
   getGroupComments: GetGroupCommentsResponse;
   getGroupDetails?: Maybe<GroupDetails>;
   getGroupTiles: Array<GroupTile>;
   getGroupTilesByUserId: GetGroupsByUserIdReponse;
   getGroupTitles: Array<Title>;
+  getReceivedFriendRequests: GetReceivedFriendRequestsResponse;
+  getSentFriendRequests: GetSentFriendRequestsReponse;
   getUsedCategories: Array<Category>;
   getUsedCities: Array<City>;
+  getUserGroupTiles: GetUserGroupTilesReponse;
   getUserWithProfile?: Maybe<UserWithProfile>;
   getUsers: Array<User>;
   getUsersByUsername: Array<User>;
   groups: Array<GroupWithStatus>;
   me?: Maybe<User>;
+  notifications: Scalars['Int']['output'];
   users: Array<User>;
 };
 
@@ -397,8 +526,17 @@ export type QueryGetEventTilesByUserIdArgs = {
 };
 
 
+export type QueryGetFriendsListArgs = {
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
+  userId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryGetGroupCommentsArgs = {
   groupId: Scalars['String']['input'];
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  take?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -430,6 +568,26 @@ export type QueryGetGroupTitlesArgs = {
 };
 
 
+export type QueryGetReceivedFriendRequestsArgs = {
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
+};
+
+
+export type QueryGetSentFriendRequestsArgs = {
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
+};
+
+
+export type QueryGetUserGroupTilesArgs = {
+  groupId: Scalars['String']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
+};
+
+
 export type QueryGetUserWithProfileArgs = {
   userId: Scalars['String']['input'];
 };
@@ -437,6 +595,12 @@ export type QueryGetUserWithProfileArgs = {
 
 export type QueryGetUsersByUsernameArgs = {
   username: Scalars['String']['input'];
+};
+
+
+export type QueryNotificationsArgs = {
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
 };
 
 export type RefreshTokenResponse = {
@@ -449,6 +613,16 @@ export type Role =
   | 'HOST'
   | 'MEMBER'
   | 'MODERATOR';
+
+export type Subscription = {
+  __typename?: 'Subscription';
+  notificationAdded: Notification;
+};
+
+
+export type SubscriptionNotificationAddedArgs = {
+  recipientId: Scalars['String']['input'];
+};
 
 export type Title = {
   __typename?: 'Title';
@@ -481,6 +655,28 @@ export type UserBase = {
   username: Scalars['String']['output'];
 };
 
+export type UserGroupTile = {
+  __typename?: 'UserGroupTile';
+  role: Role;
+  userTile: UserTile;
+};
+
+export type UserTile = UserBase & {
+  __typename?: 'UserTile';
+  createdAt: Scalars['Date']['output'];
+  email: Scalars['String']['output'];
+  eventsCount: Scalars['Int']['output'];
+  friendsCount: Scalars['Int']['output'];
+  groupsCount: Scalars['Int']['output'];
+  id: Scalars['String']['output'];
+  largePhoto: Scalars['String']['output'];
+  mediumPhoto: Scalars['String']['output'];
+  role: AppRole;
+  smallPhoto: Scalars['String']['output'];
+  status: AccountStatus;
+  username: Scalars['String']['output'];
+};
+
 export type UserWithProfile = UserBase & {
   __typename?: 'UserWithProfile';
   createdAt: Scalars['Date']['output'];
@@ -493,4 +689,9 @@ export type UserWithProfile = UserBase & {
   smallPhoto: Scalars['String']['output'];
   status: AccountStatus;
   username: Scalars['String']['output'];
+};
+
+export type UsersData = {
+  __typename?: 'UsersData';
+  count: Scalars['Int']['output'];
 };

@@ -1,7 +1,8 @@
 type GetGroupCommentsResponse {
   comments: [Comment!]!
+  count: Int!
 }
 
 type Query {
-  getGroupComments(groupId: String!): GetGroupCommentsResponse!
+  getGroupComments(groupId: String!, skip: Int, take: Int): GetGroupCommentsResponse!
 }

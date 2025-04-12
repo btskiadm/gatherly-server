@@ -1,6 +1,13 @@
 import { MercuriusContext } from "mercurius";
-import { Query, QueryGetUsersByUsernameArgs, QueryGetUserWithProfileArgs } from "../model/model";
+import {
+  Query,
+  QueryGetUserGroupTilesArgs,
+  QueryGetUsersByUsernameArgs,
+  QueryGetUserWithProfileArgs,
+} from "../model/model";
 import { userValidator } from "../prisma/validators/user.validators";
+import { count } from "console";
+import { env } from "../utils/env";
 
 export default {
   Query: {
@@ -48,6 +55,59 @@ export default {
           },
         },
       });
+    },
+    getUserGroupTiles: async (
+      _: unknown,
+      { groupId, skip, take, search }: QueryGetUserGroupTilesArgs,
+      { prisma }: MercuriusContext
+    ): Promise<Query["getUserGroupTiles"]> => {
+      const [users, count] = await Promise.all([
+        prisma.groupUser.findMany({
+          where: {
+            groupId,
+          },
+          include: {
+            user: {
+              include: {
+                _count: {
+                  select: {
+                    groups: true,
+                    events: true,
+                    hostEvents: true,
+                    friendshipUser1: true,
+                    friendshipUser2: true,
+                  },
+                },
+              },
+            },
+          },
+          skip: skip,
+          take: take,
+        }),
+        prisma.groupUser.count({
+          where: {
+            groupId,
+          },
+        }),
+      ]);
+
+      return {
+        userGroupTiles: users.map(({ groupId, id, role, user, userId }) => {
+          return {
+            role,
+            userTile: {
+              ...user,
+              smallPhoto: `${env.PHOTOS_BUCKET_URL}/${user.smallPhoto}`,
+              mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${user.mediumPhoto}`,
+              largePhoto: `${env.PHOTOS_BUCKET_URL}/${user.largePhoto}`,
+              eventsCount: user._count.events + user._count.hostEvents,
+              groupsCount: user._count.groups,
+              friendsCount: user._count.friendshipUser1 + user._count.friendshipUser2,
+            },
+          };
+        }),
+        count,
+      };
     },
   },
 };

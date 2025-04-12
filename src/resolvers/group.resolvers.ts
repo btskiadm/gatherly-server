@@ -8,6 +8,7 @@ import {
   GroupedEvents,
   Mutation,
   MutationCreateGroupArgs,
+  MutationInviteUsersToGroupArgs,
   MutationJoinGroupArgs,
   MutationLeaveGroupArgs,
   Query,
@@ -17,6 +18,7 @@ import {
   QueryGetGroupTitlesArgs,
 } from "../model/model";
 import { getPhotoUrl } from "../utils/photoUrl";
+import { env } from "../utils/env";
 
 // Typy dla sortowania.
 type NumberOfMembers = "ascending" | "descending";
@@ -321,17 +323,55 @@ export default {
       const groupDetailsValidator = Prisma.validator<Prisma.GroupInclude>()({
         categories: { include: { category: true } },
         cities: { include: { city: true } },
-        users: { include: { user: true } },
-        comments: { include: { user: true } },
+        _count: {
+          select: {
+            users: true,
+          },
+        },
+        // users: {
+        //   include: {
+        //     user: {
+        //       include: {
+        //         _count: {
+        //           select: {
+        //             groups: true,
+        //             events: true,
+        //             hostEvents: true,
+        //             friendshipUser1: true,
+        //             friendshipUser2: true,
+        //           },
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
+        comments: {
+          select: {
+            id: true,
+          },
+        },
+        users: {
+          select: {
+            id: true,
+          },
+        },
         events: { include: eventValidator },
       });
 
-      const group = await prisma.group.findFirst({
-        where: { id: groupId },
-        include: groupDetailsValidator,
-      });
+      const [group, rate] = await Promise.all([
+        prisma.group.findFirst({
+          where: { id: groupId },
+          include: groupDetailsValidator,
+        }),
+        prisma.comment.aggregate({
+          where: { groupId },
+          _avg: { rate: true },
+        }),
+      ]);
 
-      if (!group) return null;
+      if (!group) {
+        return null;
+      }
 
       const now = new Date();
 
@@ -342,18 +382,18 @@ export default {
         upcoming: EventWithInclude[];
         pending: EventWithInclude[];
         past: EventWithInclude[];
-        cancelled: EventWithInclude[];
+        canceled: EventWithInclude[];
       } => {
         const grouped = {
           upcoming: [] as EventWithInclude[],
           pending: [] as EventWithInclude[],
           past: [] as EventWithInclude[],
-          cancelled: [] as EventWithInclude[],
+          canceled: [] as EventWithInclude[],
         };
 
         for (const event of events) {
           if (event.canceled) {
-            grouped.cancelled.push(event);
+            grouped.canceled.push(event);
           } else {
             const startAt = new Date(event.startAt);
             const endAt = new Date(event.endAt);
@@ -412,11 +452,11 @@ export default {
         });
       };
 
-      const { upcoming, pending, past, cancelled } = getGroupedEvents(group.events);
+      const { upcoming, pending, past, canceled } = getGroupedEvents(group.events);
       const upcomingGrouped = groupEventsByMonth(upcoming);
       const pendingGrouped = groupEventsByMonth(pending);
       const pastGrouped = groupEventsByMonth(past);
-      const cancelledGrouped = groupEventsByMonth(cancelled);
+      const canceledGrouped = groupEventsByMonth(canceled);
 
       const eventsMapped: EventTile[] = group.events.map(mapEventToGroup);
 
@@ -424,17 +464,11 @@ export default {
       const numOfEvents = (groups: GroupedEvents[]): number => groups.reduce((sum, g) => sum + g.events.length, 0);
       const roundToQuarter = (value: number): number => Math.round(value * 4) / 4;
 
-      const cancelledLength = numOfEvents(cancelledGrouped);
+      const canceledLength = numOfEvents(canceledGrouped);
       const pastLength = numOfEvents(pastGrouped);
       const upcomingLength = numOfEvents(upcomingGrouped);
       const pendingLength = numOfEvents(pendingGrouped);
-      const eventsLength = cancelledLength + pastLength + upcomingLength + pendingLength;
-      // Rzutowanie comments na tablicę z rate (przyjmujemy, że każdy komentarz posiada pole rate).
-      const comments = group.comments as Array<{ rate: number }>;
-      const averageRate =
-        comments.length > 0
-          ? roundToQuarter(comments.reduce((sum, comment) => sum + comment.rate, 0) / comments.length)
-          : 0;
+      const eventsLength = canceledLength + pastLength + upcomingLength + pendingLength;
 
       return {
         id: group.id,
@@ -444,23 +478,42 @@ export default {
         updatedAt: group.updatedAt,
         cities: group.cities.map(({ city }) => city),
         categories: group.categories.map(({ category }) => category),
-        users: group.users.map(({ id, role, user }) => ({
-          id,
-          role,
-          user,
-        })),
-        comments: group.comments,
+        usersData: {
+          count: group._count.users,
+        },
+        // users: group.users.map(({ id, role, user }) => ({
+        //   id,
+        //   role,
+        //   user,
+        // })),
+        // usersData: {
+        //   users: group.users.map(({ id, role, user }) => ({
+        //     id,
+        //     role,
+        //     user: {
+        //       ...user,
+        //       largePhoto: `${env.PHOTOS_BUCKET_URL}/${user.largePhoto}`,
+        //       mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${user.mediumPhoto}`,
+        //       smallPhoto: `${env.PHOTOS_BUCKET_URL}/${user.smallPhoto}`,
+        //       eventsCount: user._count.events + user._count.hostEvents,
+        //       groupsCount: user._count.groups,
+        //       friendsCount: user._count.friendshipUser1 + user._count.friendshipUser2,
+        //     }
+        //   })),
+        // },
+        commentsData: {
+          rate: roundToQuarter(rate._avg.rate ?? 0),
+        },
         upcoming: upcomingGrouped,
         pending: pendingGrouped,
         past: pastGrouped,
-        cancelled: cancelledGrouped,
+        canceled: canceledGrouped,
         events: eventsMapped,
         upcomingLength,
         pendingLength,
         pastLength,
-        cancelledLength,
+        canceledLength,
         eventsLength,
-        rate: averageRate,
         largePhoto: getPhotoUrl(group.largePhoto),
         mediumPhoto: getPhotoUrl(group.mediumPhoto),
         smallPhoto: getPhotoUrl(group.smallPhoto),

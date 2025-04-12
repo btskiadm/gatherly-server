@@ -23,3 +23,19 @@ type UserWithProfile implements UserBase {
 
   profile: Profile!
 }
+
+type UserTile implements UserBase {
+  id: String!
+  username: String!
+  email: String!
+  createdAt: Date!
+  role: AppRole!
+  status: AccountStatus!
+  smallPhoto: String!
+  mediumPhoto: String!
+  largePhoto: String!
+
+  eventsCount: Int!
+  groupsCount: Int!
+  friendsCount: Int!
+}

@@ -59,6 +59,10 @@ type Comment {
   user: User!
 }
 
+type CommentsData {
+  rate: Float!
+}
+
 input CreateEventInput {
   categories: [String!]!
   cities: [String!]!
@@ -148,18 +152,67 @@ type EventUser {
   user: User!
 }
 
+type Friend {
+  createdAt: Date!
+  id: ID!
+  user: User!
+}
+
+type FriendRequest {
+  createdAt: Date!
+  id: ID!
+  receiver: User!
+  sender: User!
+  status: FriendRequestStatus!
+  updatedAt: Date!
+}
+
+enum FriendRequestStatus {
+  ACCEPTED
+  DECLINED
+  PENDING
+}
+
+type Friendship {
+  createdAt: Date!
+  id: ID!
+  user1: User!
+  user2: User!
+}
+
 type GetEventTilesByUserIdReponse {
   count: Int!
   events: [EventTile!]!
 }
 
+type GetFriendsListResponse {
+  count: Int!
+  friends: [Friend!]!
+}
+
 type GetGroupCommentsResponse {
   comments: [Comment!]!
+  count: Int!
 }
 
 type GetGroupsByUserIdReponse {
   count: Int!
   groups: [GroupTile!]!
+}
+
+type GetReceivedFriendRequestsResponse {
+  count: Int!
+  friendRequests: [FriendRequest!]!
+}
+
+type GetSentFriendRequestsReponse {
+  count: Int!
+  friendRequests: [FriendRequest!]!
+}
+
+type GetUserGroupTilesReponse {
+  count: Int!
+  userGroupTiles: [UserGroupTile!]!
 }
 
 interface GroupBase {
@@ -174,11 +227,11 @@ interface GroupBase {
 }
 
 type GroupDetails implements GroupBase {
-  cancelled: [GroupedEvents!]!
-  cancelledLength: Int!
+  canceled: [GroupedEvents!]!
+  canceledLength: Int!
   categories: [Category!]!
   cities: [City!]!
-  comments: [Comment!]!
+  commentsData: CommentsData!
   createdAt: Date!
   description: String!
   events: [EventTile!]!
@@ -190,13 +243,12 @@ type GroupDetails implements GroupBase {
   pastLength: Int!
   pending: [GroupedEvents!]!
   pendingLength: Int
-  rate: Float!
   smallPhoto: String!
   title: String!
   upcoming: [GroupedEvents!]!
   upcomingLength: Int!
   updatedAt: Date!
-  users: [GroupUser!]!
+  usersData: UsersData!
 }
 
 enum GroupStatus {
@@ -249,6 +301,11 @@ type GroupedEvents {
   monthReference: String!
 }
 
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
 type JoinGroupReponse {
   success: Boolean!
 }
@@ -267,14 +324,41 @@ type LogoutResponse {
 }
 
 type Mutation {
+  acceptFriendRequest(requestId: String!): Friendship!
   addGroupComment(addGroupCommentInput: AddGroupCommentInput!, groupId: String!): AddGroupCommentResponse!
+  addNotification(recipientId: String!): Boolean!
+  cancelFriendRequest(requestId: String!): FriendRequest!
+  cancelFriendship(friendshipId: String!): Friendship!
   createEvent(createEventInput: CreateEventInput!, groupId: String!): CreateEventReponse!
   createGroup(createGroupInput: CreateGroupInput!): CreateGroupReponse!
+  declineFriendRequest(requestId: String!): FriendRequest!
   joinGroup(groupId: String!): JoinGroupReponse!
   leaveGroup(groupId: String!): LeaveGroupReponse!
   login(password: String!, username: String!): LoginResponse
   logout: LogoutResponse
+  markAsRead(id: ID!): Notification!
   refreshToken: RefreshTokenResponse
+  sendFriendRequest(receiverId: String!): FriendRequest!
+}
+
+type Notification {
+  createdAt: Date!
+  data: JSON
+  id: ID!
+  read: Boolean!
+  type: NotificationType!
+}
+
+enum NotificationType {
+  EVENT_INVITE
+  FRIEND_ACCEPTED
+  FRIEND_REQUEST
+  GROUP_INVITE
+}
+
+type NotificationsResponse {
+  count: Int!
+  notifications: [Notification!]!
 }
 
 type Profile {
@@ -295,18 +379,23 @@ type Query {
   getCategories: [Category!]!
   getCities: [City!]!
   getEventTilesByUserId(skip: Int, take: Int, userId: String!): GetEventTilesByUserIdReponse!
-  getGroupComments(groupId: String!): GetGroupCommentsResponse!
+  getFriendsList(skip: Int!, take: Int!, userId: String): GetFriendsListResponse!
+  getGroupComments(groupId: String!, skip: Int, take: Int): GetGroupCommentsResponse!
   getGroupDetails(groupId: String!): GroupDetails
   getGroupTiles(categories: [String!]!, cities: [String!]!, dateOfAdding: String!, maxMembers: Int!, minMembers: Int!, numberOfMembers: String!, titles: [String!]!): [GroupTile!]!
   getGroupTilesByUserId(skip: Int, take: Int, userId: String!): GetGroupsByUserIdReponse!
   getGroupTitles(title: String!): [Title!]!
+  getReceivedFriendRequests(skip: Int!, take: Int!): GetReceivedFriendRequestsResponse!
+  getSentFriendRequests(skip: Int!, take: Int!): GetSentFriendRequestsReponse!
   getUsedCategories: [Category!]!
   getUsedCities: [City!]!
+  getUserGroupTiles(groupId: String!, search: String, skip: Int!, take: Int!): GetUserGroupTilesReponse!
   getUserWithProfile(userId: String!): UserWithProfile
   getUsers: [User!]!
   getUsersByUsername(username: String!): [User!]!
   groups: [GroupWithStatus!]!
   me: User
+  notifications(skip: Int!, take: Int!): Int!
   users: [User!]!
 }
 
@@ -319,6 +408,10 @@ enum Role {
   HOST
   MEMBER
   MODERATOR
+}
+
+type Subscription {
+  notificationAdded(recipientId: String!): Notification!
 }
 
 type Title {
@@ -350,6 +443,26 @@ interface UserBase {
   username: String!
 }
 
+type UserGroupTile {
+  role: Role!
+  userTile: UserTile!
+}
+
+type UserTile implements UserBase {
+  createdAt: Date!
+  email: String!
+  eventsCount: Int!
+  friendsCount: Int!
+  groupsCount: Int!
+  id: String!
+  largePhoto: String!
+  mediumPhoto: String!
+  role: AppRole!
+  smallPhoto: String!
+  status: AccountStatus!
+  username: String!
+}
+
 type UserWithProfile implements UserBase {
   createdAt: Date!
   email: String!
@@ -361,4 +474,8 @@ type UserWithProfile implements UserBase {
   smallPhoto: String!
   status: AccountStatus!
   username: String!
+}
+
+type UsersData {
+  count: Int!
 }

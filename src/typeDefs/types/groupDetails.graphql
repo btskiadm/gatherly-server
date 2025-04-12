@@ -9,6 +9,14 @@ type GroupUser {
   user: User!
 }
 
+type CommentsData {
+  rate: Float!
+}
+
+type UsersData {
+  count: Int!
+}
+
 type GroupDetails implements GroupBase {
   id: String!
   title: String!
@@ -20,17 +28,16 @@ type GroupDetails implements GroupBase {
   largePhoto: String!
   cities: [City!]!
   categories: [Category!]!
-  users: [GroupUser!]!
-  comments: [Comment!]!
+  usersData: UsersData!
+  commentsData: CommentsData!
   upcoming: [GroupedEvents!]!
   pending: [GroupedEvents!]!
   past: [GroupedEvents!]!
-  cancelled: [GroupedEvents!]!
+  canceled: [GroupedEvents!]!
   events: [EventTile!]!
   upcomingLength: Int!
   pendingLength: Int
   pastLength: Int!
-  cancelledLength: Int!
+  canceledLength: Int!
   eventsLength: Int!
-  rate: Float!
 }

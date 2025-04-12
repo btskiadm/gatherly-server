@@ -1,0 +1,4 @@
+type Mutation {
+  addNotification(recipientId: String!): Boolean!
+  markAsRead(id: ID!): Notification!
+}

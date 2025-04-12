@@ -1,0 +1,5 @@
+type Friend {
+  id: ID!
+  user: User!
+  createdAt: Date!
+}

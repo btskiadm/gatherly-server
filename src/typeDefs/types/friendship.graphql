@@ -1,0 +1,6 @@
+type Friendship {
+  id: ID!
+  user1: User!
+  user2: User!
+  createdAt: Date!
+}

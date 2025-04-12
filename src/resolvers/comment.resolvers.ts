@@ -5,28 +5,47 @@ import {
   MutationAddGroupCommentArgs,
   QueryGetGroupCommentsArgs,
 } from "../model/model";
+import { env } from "../utils/env";
 
 export default {
   Query: {
     getGroupComments: async (
       _: unknown,
-      { groupId }: QueryGetGroupCommentsArgs,
+      { groupId, skip, take }: QueryGetGroupCommentsArgs,
       { prisma }: MercuriusContext
     ): Promise<GetGroupCommentsResponse> => {
-      const comments = await prisma.comment.findMany({
-        where: {
-          groupId: groupId,
-        },
-        include: {
-          user: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+      const [comments, count] = await Promise.all([
+        prisma.comment.findMany({
+          where: {
+            groupId: groupId,
+          },
+          include: {
+            user: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          skip: skip ?? 0,
+          take: take ?? 0,
+        }),
+        prisma.comment.count({
+          where: {
+            groupId: groupId,
+          },
+        }),
+      ]);
 
       return {
-        comments,
+        comments: comments.map((comment) => ({
+          ...comment,
+          user: {
+            ...comment.user,
+            largePhoto: `${env.PHOTOS_BUCKET_URL}/${comment.user.largePhoto}`,
+            mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${comment.user.mediumPhoto}`,
+            smallPhoto: `${env.PHOTOS_BUCKET_URL}/${comment.user.smallPhoto}`,
+          },
+        })),
+        count: count,
       };
     },
   },
@@ -63,7 +82,6 @@ export default {
             user: true,
           },
         });
-
         return {
           success: !!comment,
           comment,

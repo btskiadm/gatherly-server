@@ -1,0 +1,28 @@
+type GetReceivedFriendRequestsResponse {
+  friendRequests: [FriendRequest!]!
+  count: Int!
+}
+
+type GetSentFriendRequestsReponse {
+  friendRequests: [FriendRequest!]!
+  count: Int!
+}
+
+type GetFriendsListResponse {
+  friends: [Friend!]!
+  count: Int!
+}
+
+type Query {
+  getReceivedFriendRequests(skip: Int!, take: Int!): GetReceivedFriendRequestsResponse!
+  getSentFriendRequests(skip: Int!, take: Int!): GetSentFriendRequestsReponse!
+  getFriendsList(userId: String, skip: Int!, take: Int!): GetFriendsListResponse!
+}
+
+type Mutation {
+  acceptFriendRequest(requestId: String!): Friendship!
+  cancelFriendship(friendshipId: String!): Friendship!
+  sendFriendRequest(receiverId: String!): FriendRequest!
+  declineFriendRequest(requestId: String!): FriendRequest!
+  cancelFriendRequest(requestId: String!): FriendRequest!
+}

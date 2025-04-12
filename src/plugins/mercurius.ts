@@ -5,6 +5,8 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { defaultErrorFormatter, MercuriusOptions } from "mercurius";
 import { resolvers } from "../resolvers/resolvers";
 import { typeDefs } from "../typeDefs/typeDefs";
+import { WebSocket } from "ws";
+import fastifyJwt from "@fastify/jwt";
 
 const prisma = new PrismaClient();
 
@@ -143,6 +145,17 @@ export const buildContext = async (req: FastifyRequest, reply: FastifyReply) => 
 
 export const mercuriusOptions: MercuriusOptions = {
   graphiql: true,
+  subscription: {
+    onConnect: async (data: { payload: { headers: { Authorization: string } } }) => {
+      return data;
+    },
+    context: async (socket: WebSocket, req: FastifyRequest) => {
+      return {
+        req,
+        prisma,
+      };
+    },
+  },
   schema: makeExecutableSchema({
     typeDefs,
     resolvers,
