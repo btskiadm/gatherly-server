@@ -1,5 +1,6 @@
 import { FriendRequestStatus, NotificationType } from "@prisma/client";
 import { MercuriusContext } from "mercurius";
+import { AuthError } from "../errors/auth.error";
 import {
   GetFriendsListResponse,
   GetReceivedFriendRequestsResponse,
@@ -14,7 +15,7 @@ import {
   QueryGetSentFriendRequestsArgs,
 } from "../model/model";
 import { env } from "../utils/env";
-import { AuthError } from "../errors/auth.error";
+import { userWithEnvPhotoPrefix } from "../utils/user";
 
 function sortIds(id1: string, id2: string): [string, string] {
   return id1 < id2 ? [id1, id2] : [id2, id1];
@@ -163,12 +164,45 @@ export default {
       if (existingFriendship) {
         throw new Error("Jesteście już znajomymi.");
       }
-      return context.prisma.friendRequest.create({
-        data: {
-          sender: { connect: { id: senderId } },
-          receiver: { connect: { id: receiverId } },
-        },
-        include: { sender: true, receiver: true },
+
+      return await context.prisma.$transaction(async (tx) => {
+        const friendRequest = await context.prisma.friendRequest.create({
+          data: {
+            sender: { connect: { id: senderId } },
+            receiver: { connect: { id: receiverId } },
+          },
+          include: { sender: true, receiver: true },
+        });
+
+        const notification = await tx.notification.create({
+          data: {
+            recipient: {
+              connect: {
+                id: friendRequest.receiverId,
+              },
+            },
+            type: NotificationType.FRIEND_REQUEST,
+            data: { friendRequest },
+          },
+        });
+
+        const _friendRequest: typeof friendRequest = {
+          ...friendRequest,
+          receiver: userWithEnvPhotoPrefix(friendRequest.receiver),
+          sender: userWithEnvPhotoPrefix(friendRequest.sender),
+        };
+
+        context.pubsub.publish({
+          topic: NotificationType.FRIEND_REQUEST,
+          payload: {
+            notificationAdded: {
+              ...notification,
+              data: _friendRequest,
+            },
+          },
+        });
+
+        return friendRequest;
       });
     },
 
@@ -213,14 +247,23 @@ export default {
               },
             },
             type: NotificationType.FRIEND_ACCEPTED,
-            data: friendship,
+            data: { friendship },
           },
         });
+
+        const _friendship: typeof friendship = {
+          ...friendship,
+          user1: userWithEnvPhotoPrefix(friendship.user1),
+          user2: userWithEnvPhotoPrefix(friendship.user2),
+        };
 
         context.pubsub.publish({
           topic: NotificationType.FRIEND_ACCEPTED,
           payload: {
-            notification,
+            notificationAdded: {
+              ...notification,
+              data: _friendship,
+            },
           },
         });
 

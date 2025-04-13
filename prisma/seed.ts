@@ -1,4 +1,12 @@
-import { PrismaClient, AppRole, AccountStatus, GroupStatus, Role, SubscriptionPlanType } from "@prisma/client";
+import {
+  PrismaClient,
+  AppRole,
+  AccountStatus,
+  GroupStatus,
+  Role,
+  SubscriptionPlanType,
+  NotificationType,
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -416,21 +424,49 @@ async function main() {
             },
           });
           // Tworzymy rekord znajomości – pamiętaj, że relacja symetryczna (przyjmujemy konwencję: zapisujemy parę tylko raz)
-          await prisma.friendship.create({
+          const friendship = await prisma.friendship.create({
             data: {
               user1: { connect: { id: currentUser.id } },
               user2: { connect: { id: friend.id } },
             },
+            include: { user1: true, user2: true },
+          });
+
+          const notification = await prisma.notification.create({
+            data: {
+              recipient: {
+                connect: {
+                  id: currentUser.id,
+                },
+              },
+              type: NotificationType.FRIEND_ACCEPTED,
+              data: friendship,
+            },
           });
         } else {
           // Dla statusu PENDING lub DECLINED tworzymy jedynie zaproszenie
-          await prisma.friendRequest.create({
+          const fr = await prisma.friendRequest.create({
             data: {
               sender: { connect: { id: currentUser.id } },
               receiver: { connect: { id: friend.id } },
               status: status,
             },
+            include: { sender: true, receiver: true },
           });
+
+          if (status === "PENDING") {
+            await prisma.notification.create({
+              data: {
+                recipient: {
+                  connect: {
+                    id: friend.id,
+                  },
+                },
+                type: NotificationType.FRIEND_REQUEST,
+                data: fr,
+              },
+            });
+          }
         }
       } catch (error) {
         console.error(`Błąd przy tworzeniu znajomości dla użytkowników ${currentUser.id} i ${friend.id}:`, error);

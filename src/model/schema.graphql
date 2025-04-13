@@ -63,6 +63,10 @@ type CommentsData {
   rate: Float!
 }
 
+type Config {
+  photoBucketUrl: String!
+}
+
 input CreateEventInput {
   categories: [String!]!
   cities: [String!]!
@@ -326,7 +330,6 @@ type LogoutResponse {
 type Mutation {
   acceptFriendRequest(requestId: String!): Friendship!
   addGroupComment(addGroupCommentInput: AddGroupCommentInput!, groupId: String!): AddGroupCommentResponse!
-  addNotification(recipientId: String!): Boolean!
   cancelFriendRequest(requestId: String!): FriendRequest!
   cancelFriendship(friendshipId: String!): Friendship!
   createEvent(createEventInput: CreateEventInput!, groupId: String!): CreateEventReponse!
@@ -344,7 +347,7 @@ type Mutation {
 type Notification {
   createdAt: Date!
   data: JSON
-  id: ID!
+  id: String!
   read: Boolean!
   type: NotificationType!
 }
@@ -376,6 +379,7 @@ type Profile {
 
 type Query {
   checkUserGroupPermissions(groupId: String!): CheckUserGroupPermission!
+  config: Config!
   getCategories: [Category!]!
   getCities: [City!]!
   getEventTilesByUserId(skip: Int, take: Int, userId: String!): GetEventTilesByUserIdReponse!
@@ -395,7 +399,7 @@ type Query {
   getUsersByUsername(username: String!): [User!]!
   groups: [GroupWithStatus!]!
   me: User
-  notifications(skip: Int!, take: Int!): Int!
+  notifications(skip: Int!, take: Int!): NotificationsResponse!
   users: [User!]!
 }
 

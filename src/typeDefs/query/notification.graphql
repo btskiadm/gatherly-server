@@ -4,5 +4,5 @@ type NotificationsResponse {
 }
 
 type Query {
-  notifications(skip: Int!, take: Int!): Int!
+  notifications(skip: Int!, take: Int!): NotificationsResponse!
 }

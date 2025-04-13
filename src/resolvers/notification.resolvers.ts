@@ -8,7 +8,8 @@ import {
   QueryNotificationsArgs,
   SubscriptionNotificationAddedArgs,
 } from "../model/model";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, Prisma } from "@prisma/client";
+import { env } from "../utils/env";
 
 export default {
   JSON: GraphQLJSON,
@@ -21,6 +22,33 @@ export default {
     ): Promise<NotificationsResponse> => {
       if (!user?.id) {
         throw new AuthError();
+      }
+
+      function replacePhotoFieldsInJson(input: Prisma.JsonValue, bucketUrl: string): Prisma.JsonValue {
+        if (Array.isArray(input)) {
+          return input.map((item) => replacePhotoFieldsInJson(item, bucketUrl));
+        }
+
+        if (input !== null && typeof input === "object") {
+          const updated: Record<string, Prisma.JsonValue> = {};
+
+          for (const [key, value] of Object.entries(input)) {
+            if (value) {
+              if (
+                (key === "largePhoto" || key === "mediumPhoto" || key === "smallPhoto") &&
+                typeof value === "string"
+              ) {
+                updated[key] = `${bucketUrl}/${value}`;
+              } else {
+                updated[key] = replacePhotoFieldsInJson(value, bucketUrl);
+              }
+            }
+          }
+
+          return updated;
+        }
+
+        return input;
       }
 
       const [notifications, count] = await Promise.all([
@@ -43,22 +71,15 @@ export default {
 
       return {
         count,
-        notifications,
+        notifications: notifications.map((notification) => ({
+          ...notification,
+          data: replacePhotoFieldsInJson(notification.data, env.PHOTOS_BUCKET_URL),
+        })),
       };
     },
   },
 
   Mutation: {
-    addNotification: async (_: unknown, __: unknown, { pubsub }: MercuriusContext) => {
-      const n: Notification = { createdAt: new Date(), id: "11", read: false, type: "EVENT_INVITE" };
-      pubsub.publish({
-        topic: "NOTIFICATION_ADDED",
-        payload: {
-          notificationAdded: n,
-        },
-      });
-      return true;
-    },
     markAsRead: async (
       _: any,
       { id }: MutationMarkAsReadArgs,
@@ -88,7 +109,8 @@ export default {
         (__: unknown, { recipientId }: SubscriptionNotificationAddedArgs, { pubsub }: MercuriusContext) =>
           pubsub.subscribe(NotificationType.FRIEND_ACCEPTED),
         async (payload, { recipientId }: SubscriptionNotificationAddedArgs, context) => {
-          return true;
+          console.dir({ payload, recipientId });
+          return payload.notificationAdded.recipientId === recipientId;
         }
       ),
     },

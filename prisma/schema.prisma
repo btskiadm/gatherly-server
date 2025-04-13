@@ -58,10 +58,10 @@ enum FriendRequestStatus {
 
 // Enum for notification types
 enum NotificationType {
-  FRIEND_REQUEST      // Friend request
-  FRIEND_ACCEPTED     // Friend request accepted
-  GROUP_INVITE        // Group invitation
-  EVENT_INVITE        // Event invitation
+  FRIEND_REQUEST // Friend request
+  FRIEND_ACCEPTED // Friend request accepted
+  GROUP_INVITE // Group invitation
+  EVENT_INVITE // Event invitation
 }
 
 // =====================
@@ -92,7 +92,7 @@ model User {
   // Relations for established friendships
   friendshipUser1 Friendship[] @relation("friendshipUser1")
   friendshipUser2 Friendship[] @relation("friendshipUser2")
-  
+
   // Relation to notifications
   notifications Notification[]
 }
@@ -320,7 +320,7 @@ model Notification {
   // Relation to the recipient user of this notification
   recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   recipientId String
-  data        Json?            // Additional data specific to the notification (e.g., related friend request, group, or event ID)
+  data        Json? // Additional data specific to the notification (e.g., related friend request, group, or event ID)
   read        Boolean          @default(false)
   createdAt   DateTime         @default(now())
 }

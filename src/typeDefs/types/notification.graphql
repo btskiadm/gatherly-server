@@ -1,5 +1,5 @@
 type Notification {
-  id: ID!
+  id: String!
   type: NotificationType!
   data: JSON
   read: Boolean!
