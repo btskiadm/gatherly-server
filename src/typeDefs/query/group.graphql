@@ -3,8 +3,17 @@ type CheckUserGroupPermission {
 }
 
 type GetGroupsByUserIdReponse {
-  groups: [GroupTile!]!
+  groups: [GroupTileWithUsers!]!
   count: Int!
+}
+
+type GroupJoinRequest {
+  id: String!
+  createdAt: Date!
+  updatedAt: Date!
+  status: GroupJoinRequestStatus!
+  user: User!
+  sender: User
 }
 
 type Query {
@@ -20,5 +29,7 @@ type Query {
   ): [GroupTile!]!
   getGroupDetails(groupId: String!): GroupDetails
   checkUserGroupPermissions(groupId: String!): CheckUserGroupPermission!
-  getGroupTilesByUserId(userId: String!, skip: Int, take: Int): GetGroupsByUserIdReponse!
+  getGroupTilesByUserId(userId: String, skip: Int!, take: Int!): GetGroupsByUserIdReponse!
+  getGroupJoinRequests(groupId: String!, status: [GroupJoinRequestStatus!]): [GroupJoinRequest!]!
+  getGroupJoinInvitationRequests(groupId: String!, status: [GroupJoinRequestStatus!]): [GroupJoinRequest!]!
 }

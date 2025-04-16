@@ -3,10 +3,9 @@ import { PrismaClient } from "@prisma/client";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 import { defaultErrorFormatter, MercuriusOptions } from "mercurius";
+import { WebSocket } from "ws";
 import { resolvers } from "../resolvers/resolvers";
 import { typeDefs } from "../typeDefs/typeDefs";
-import { WebSocket } from "ws";
-import fastifyJwt from "@fastify/jwt";
 
 const prisma = new PrismaClient();
 

@@ -22,7 +22,7 @@ type Query {
 type Mutation {
   acceptFriendRequest(requestId: String!): Friendship!
   cancelFriendship(friendshipId: String!): Friendship!
-  sendFriendRequest(receiverId: String!): FriendRequest!
+  sendFriendRequest(receiverIds: [String!]!): [FriendRequest!]!
   declineFriendRequest(requestId: String!): FriendRequest!
   cancelFriendRequest(requestId: String!): FriendRequest!
 }

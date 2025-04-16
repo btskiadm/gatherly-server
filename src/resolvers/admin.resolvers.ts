@@ -62,6 +62,7 @@ export default {
           title,
           updatedAt,
           users,
+          isPrivate,
         }) => ({
           id,
           title,
@@ -69,6 +70,7 @@ export default {
           createdAt,
           updatedAt,
           status,
+          isPrivate,
           categories: categories.map((c) => c.category),
           cities: cities.map((c) => c.city),
           largePhoto: `${env.PHOTOS_BUCKET_URL}/${largePhoto}`,

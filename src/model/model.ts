@@ -123,11 +123,6 @@ export type CreateGroupReponse = {
   success: Scalars['Boolean']['output'];
 };
 
-export type DeleteGroupResponse = {
-  __typename?: 'DeleteGroupResponse';
-  success: Scalars['Boolean']['output'];
-};
-
 export type Event = {
   __typename?: 'Event';
   canceled: Scalars['Boolean']['output'];
@@ -238,7 +233,7 @@ export type GetGroupCommentsResponse = {
 export type GetGroupsByUserIdReponse = {
   __typename?: 'GetGroupsByUserIdReponse';
   count: Scalars['Int']['output'];
-  groups: Array<GroupTile>;
+  groups: Array<GroupTileWithUsers>;
 };
 
 export type GetReceivedFriendRequestsResponse = {
@@ -263,9 +258,11 @@ export type GroupBase = {
   createdAt: Scalars['Date']['output'];
   description: Scalars['String']['output'];
   id: Scalars['String']['output'];
+  isPrivate: Scalars['Boolean']['output'];
   largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
   smallPhoto: Scalars['String']['output'];
+  status: GroupStatus;
   title: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
 };
@@ -282,19 +279,43 @@ export type GroupDetails = GroupBase & {
   events: Array<EventTile>;
   eventsLength: Scalars['Int']['output'];
   id: Scalars['String']['output'];
+  isHidden: Scalars['Boolean']['output'];
+  isPrivate: Scalars['Boolean']['output'];
   largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
+  membersApprover: GroupMemberApprover;
   past: Array<GroupedEvents>;
   pastLength: Scalars['Int']['output'];
   pending: Array<GroupedEvents>;
   pendingLength?: Maybe<Scalars['Int']['output']>;
   smallPhoto: Scalars['String']['output'];
+  status: GroupStatus;
   title: Scalars['String']['output'];
   upcoming: Array<GroupedEvents>;
   upcomingLength: Scalars['Int']['output'];
   updatedAt: Scalars['Date']['output'];
   usersData: UsersData;
 };
+
+export type GroupJoinRequest = {
+  __typename?: 'GroupJoinRequest';
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['String']['output'];
+  sender?: Maybe<User>;
+  status: GroupJoinRequestStatus;
+  updatedAt: Scalars['Date']['output'];
+  user: User;
+};
+
+export type GroupJoinRequestStatus =
+  | 'ACCEPTED'
+  | 'DECLINED'
+  | 'PENDING';
+
+export type GroupMemberApprover =
+  | 'MEMBER'
+  | 'MODERATOR'
+  | 'NOT_REQUIRED';
 
 export type GroupStatus =
   | 'ACTIVE'
@@ -311,11 +332,32 @@ export type GroupTile = GroupBase & {
   description: Scalars['String']['output'];
   eventsCount: Scalars['Int']['output'];
   id: Scalars['String']['output'];
+  isPrivate: Scalars['Boolean']['output'];
   largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
   smallPhoto: Scalars['String']['output'];
+  status: GroupStatus;
   title: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
+  usersCount: Scalars['Int']['output'];
+};
+
+export type GroupTileWithUsers = GroupBase & {
+  __typename?: 'GroupTileWithUsers';
+  categories: Array<Category>;
+  cities: Array<City>;
+  createdAt: Scalars['Date']['output'];
+  description: Scalars['String']['output'];
+  eventsCount: Scalars['Int']['output'];
+  id: Scalars['String']['output'];
+  isPrivate: Scalars['Boolean']['output'];
+  largePhoto: Scalars['String']['output'];
+  mediumPhoto: Scalars['String']['output'];
+  smallPhoto: Scalars['String']['output'];
+  status: GroupStatus;
+  title: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+  users: Array<User>;
   usersCount: Scalars['Int']['output'];
 };
 
@@ -326,37 +368,10 @@ export type GroupUser = {
   user: User;
 };
 
-export type GroupWithStatus = GroupBase & {
-  __typename?: 'GroupWithStatus';
-  categories: Array<Category>;
-  cities: Array<City>;
-  createdAt: Scalars['Date']['output'];
-  description: Scalars['String']['output'];
-  eventsCount: Scalars['Int']['output'];
-  id: Scalars['String']['output'];
-  largePhoto: Scalars['String']['output'];
-  mediumPhoto: Scalars['String']['output'];
-  smallPhoto: Scalars['String']['output'];
-  status: GroupStatus;
-  title: Scalars['String']['output'];
-  updatedAt: Scalars['Date']['output'];
-  usersCount: Scalars['Int']['output'];
-};
-
 export type GroupedEvents = {
   __typename?: 'GroupedEvents';
   events: Array<EventTile>;
   monthReference: Scalars['String']['output'];
-};
-
-export type JoinGroupReponse = {
-  __typename?: 'JoinGroupReponse';
-  success: Scalars['Boolean']['output'];
-};
-
-export type LeaveGroupReponse = {
-  __typename?: 'LeaveGroupReponse';
-  success: Scalars['Boolean']['output'];
 };
 
 export type LoginResponse = {
@@ -373,24 +388,42 @@ export type LogoutResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   acceptFriendRequest: Friendship;
+  acceptJoinRequestGroup: Scalars['Boolean']['output'];
+  acceptSentGroupInvitation: Scalars['Boolean']['output'];
   addGroupComment: AddGroupCommentResponse;
   cancelFriendRequest: FriendRequest;
   cancelFriendship: Friendship;
+  cancelJoinGroup: Scalars['Boolean']['output'];
+  cancelJoinRequestGroup: Scalars['Boolean']['output'];
+  cancelSentGroupInvitation: Scalars['Boolean']['output'];
   createEvent: CreateEventReponse;
   createGroup: CreateGroupReponse;
   declineFriendRequest: FriendRequest;
-  joinGroup: JoinGroupReponse;
-  leaveGroup: LeaveGroupReponse;
+  deleteNotification: Notification;
+  joinGroup: Scalars['Boolean']['output'];
+  leaveGroup: Scalars['Boolean']['output'];
   login?: Maybe<LoginResponse>;
   logout?: Maybe<LogoutResponse>;
   markAsRead: Notification;
   refreshToken?: Maybe<RefreshTokenResponse>;
-  sendFriendRequest: FriendRequest;
+  sendFriendRequest: Array<FriendRequest>;
+  sendGroupInvitation: Scalars['Boolean']['output'];
 };
 
 
 export type MutationAcceptFriendRequestArgs = {
   requestId: Scalars['String']['input'];
+};
+
+
+export type MutationAcceptJoinRequestGroupArgs = {
+  groupId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+
+export type MutationAcceptSentGroupInvitationArgs = {
+  groupId: Scalars['String']['input'];
 };
 
 
@@ -410,6 +443,22 @@ export type MutationCancelFriendshipArgs = {
 };
 
 
+export type MutationCancelJoinGroupArgs = {
+  groupId: Scalars['String']['input'];
+};
+
+
+export type MutationCancelJoinRequestGroupArgs = {
+  groupId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+
+export type MutationCancelSentGroupInvitationArgs = {
+  groupId: Scalars['String']['input'];
+};
+
+
 export type MutationCreateEventArgs = {
   createEventInput: CreateEventInput;
   groupId: Scalars['String']['input'];
@@ -423,6 +472,11 @@ export type MutationCreateGroupArgs = {
 
 export type MutationDeclineFriendRequestArgs = {
   requestId: Scalars['String']['input'];
+};
+
+
+export type MutationDeleteNotificationArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -443,12 +497,18 @@ export type MutationLoginArgs = {
 
 
 export type MutationMarkAsReadArgs = {
-  id: Scalars['ID']['input'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationSendFriendRequestArgs = {
-  receiverId: Scalars['String']['input'];
+  receiverIds: Array<Scalars['String']['input']>;
+};
+
+
+export type MutationSendGroupInvitationArgs = {
+  groupId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
 };
 
 export type Notification = {
@@ -496,6 +556,8 @@ export type Query = {
   getFriendsList: GetFriendsListResponse;
   getGroupComments: GetGroupCommentsResponse;
   getGroupDetails?: Maybe<GroupDetails>;
+  getGroupJoinInvitationRequests: Array<GroupJoinRequest>;
+  getGroupJoinRequests: Array<GroupJoinRequest>;
   getGroupTiles: Array<GroupTile>;
   getGroupTilesByUserId: GetGroupsByUserIdReponse;
   getGroupTitles: Array<Title>;
@@ -507,7 +569,7 @@ export type Query = {
   getUserWithProfile?: Maybe<UserWithProfile>;
   getUsers: Array<User>;
   getUsersByUsername: Array<User>;
-  groups: Array<GroupWithStatus>;
+  groups: Array<GroupTile>;
   me?: Maybe<User>;
   notifications: NotificationsResponse;
   users: Array<User>;
@@ -545,6 +607,18 @@ export type QueryGetGroupDetailsArgs = {
 };
 
 
+export type QueryGetGroupJoinInvitationRequestsArgs = {
+  groupId: Scalars['String']['input'];
+  status?: InputMaybe<Array<GroupJoinRequestStatus>>;
+};
+
+
+export type QueryGetGroupJoinRequestsArgs = {
+  groupId: Scalars['String']['input'];
+  status?: InputMaybe<Array<GroupJoinRequestStatus>>;
+};
+
+
 export type QueryGetGroupTilesArgs = {
   categories: Array<Scalars['String']['input']>;
   cities: Array<Scalars['String']['input']>;
@@ -557,9 +631,9 @@ export type QueryGetGroupTilesArgs = {
 
 
 export type QueryGetGroupTilesByUserIdArgs = {
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  take?: InputMaybe<Scalars['Int']['input']>;
-  userId: Scalars['String']['input'];
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
+  userId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -648,6 +722,7 @@ export type UserBase = {
   createdAt: Scalars['Date']['output'];
   email: Scalars['String']['output'];
   id: Scalars['String']['output'];
+  largePhoto: Scalars['String']['output'];
   mediumPhoto: Scalars['String']['output'];
   role: AppRole;
   smallPhoto: Scalars['String']['output'];

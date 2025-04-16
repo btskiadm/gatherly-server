@@ -7,4 +7,6 @@ interface GroupBase {
   smallPhoto: String!
   mediumPhoto: String!
   largePhoto: String!
+  status: GroupStatus!
+  isPrivate: Boolean!
 }

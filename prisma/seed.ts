@@ -6,6 +6,7 @@ import {
   Role,
   SubscriptionPlanType,
   NotificationType,
+  GroupJoinRequestStatus, // dodany import
 } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -19,11 +20,8 @@ function getRandomSubset<T>(array: T[], count: number): T[] {
 }
 
 function generateLoremIpsum(wordCount: number): string {
-  const lorem = `Do ex eu ipsum quis tempor cupidatat excepteur elit esse et. Non velit anim cupidatat consequat velit esse cupidatat non culpa in. Cupidatat exercitation aliqua aliquip aliqua consequat enim anim nisi veniam nisi Lorem ea ex id. Magna do non est cillum Lorem ut dolor do tempor laborum amet laboris do labore. Culpa amet dolore ut adipisicing exercitation. Sunt esse occaecat voluptate labore sit sint eiusmod tempor sunt non sit.
-Enim anim dolore officia elit culpa exercitation non commodo velit quis aliqua amet duis. Ipsum ex est pariatur consequat nisi labore est labore. Reprehenderit esse ea excepteur duis aliquip consectetur excepteur. Ut ut consectetur enim ipsum laborum duis nostrud proident exercitation eiusmod deserunt deserunt id reprehenderit. Id consequat exercitation pariatur non laboris consequat commodo ipsum id duis adipisicing dolore commodo laboris. Qui cillum amet id excepteur Lorem officia consectetur ipsum pariatur culpa esse in mollit deserunt. Id exercitation eu consequat aliquip ex ea enim aliquip Lorem officia nisi ea.
-Pariatur incididunt ad officia officia exercitation do ea reprehenderit velit pariatur. Nisi aute voluptate cupidatat adipisicing amet qui fugiat cillum eu aute enim. Et dolore consequat reprehenderit amet laborum pariatur quis qui exercitation id laboris. Anim est nostrud ex deserunt id eu sit cillum pariatur consequat enim ea.
-Enim deserunt nulla ex reprehenderit dolor est culpa quis veniam aliqua ipsum eu. Reprehenderit amet eiusmod quis commodo eiusmod cillum est non adipisicing magna aliquip anim. Fugiat voluptate excepteur anim aute esse.
-Est est magna ipsum occaecat eiusmod labore sint velit sit. Consequat fugiat dolore irure aliquip in quis consectetur. Qui laboris Lorem enim do in eu veniam mollit proident. Excepteur laborum nostrud sunt tempor id. Deserunt ullamco tempor excepteur eiusmod ullamco in quis aliquip qui quis ea elit commodo. Sint tempor culpa labore ipsum eiusmod commodo dolor consequat aliqua eiusmod reprehenderit consequat ullamco reprehenderit.`;
+  const lorem =
+    "Do ex eu ipsum quis tempor cupidatat excepteur elit esse et. Non velit anim cupidatat consequat velit esse cupidatat non culpa in. Cupidatat exercitation aliqua aliquip aliqua consequat enim anim nisi veniam nisi Lorem ea ex id. Magna do non est cillum Lorem ut dolor do tempor laborum amet laboris do labore. Culpa amet dolore ut adipisicing exercitation. Sunt esse occaecat voluptate labore sit sint eiusmod tempor sunt non sit. Enim anim dolore officia elit culpa exercitation non commodo velit quis aliqua amet duis. Ipsum ex est pariatur consequat nisi labore est labore. Reprehenderit esse ea excepteur duis aliquip consectetur excepteur. Ut ut consectetur enim ipsum laborum duis nostrud proident exercitation eiusmod deserunt deserunt id reprehenderit. Id consequat exercitation pariatur non laboris consequat commodo ipsum id duis adipisicing dolore commodo laboris. Qui cillum amet id excepteur Lorem officia consectetur ipsum pariatur culpa esse in mollit deserunt. Id exercitation eu consequat aliquip ex ea enim aliquip Lorem officia nisi ea. Pariatur incididunt ad officia officia exercitation do ea reprehenderit velit pariatur. Nisi aute voluptate cupidatat adipisicing amet qui fugiat cillum eu aute enim. Et dolore consequat reprehenderit amet laborum pariatur quis qui exercitation id laboris. Anim est nostrud ex deserunt id eu sit cillum pariatur consequat enim ea. Enim deserunt nulla ex reprehenderit dolor est culpa quis veniam aliqua ipsum eu. Reprehenderit amet eiusmod quis commodo eiusmod cillum est non adipisicing magna aliquip anim. Fugiat voluptate excepteur anim aute esse. Est est magna ipsum occaecat eiusmod labore sint velit sit. Consequat fugiat dolore irure aliquip in quis consectetur. Qui laboris Lorem enim do in eu veniam mollit proident. Excepteur laborum nostrud sunt tempor id. Deserunt ullamco tempor excepteur eiusmod ullamco in quis aliquip qui quis ea elit commodo. Sint tempor culpa labore ipsum eiusmod commodo dolor consequat aliqua eiusmod reprehenderit consequat ullamco reprehenderit.";
 
   let result = "";
   while (result.split(" ").length < wordCount) {
@@ -50,7 +48,12 @@ const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0); // koniec n
 // Tablica do przechowywania utworzonych użytkowników
 const users: any[] = [];
 
+// Utworzymy dodatkową tablicę, w której będziemy przechowywać grupy wraz z identyfikatorami członków
+const groupsData: { group: any; members: string[] }[] = [];
+
 async function main() {
+  console.time("executionTime");
+
   // ============================================
   // Seed Categories
   // ============================================
@@ -231,7 +234,6 @@ async function main() {
     }
   };
 
-  const groups = [];
   const subscriptionPlans: SubscriptionPlanType[] = [
     SubscriptionPlanType.FREE,
     SubscriptionPlanType.PLUS,
@@ -256,6 +258,8 @@ async function main() {
         mediumPhoto: `id/${i + 100}/256/256`,
         largePhoto: `id/${i + 100}/512/512`,
         status: groupStatus(i),
+        isPrivate: i % 3 === 0,
+        isHidden: i % 4 === 0,
         createdAt: getRandomDate(rangeStart, rangeEnd),
         categories: {
           create: randomCategories.map((cat) => ({
@@ -282,7 +286,12 @@ async function main() {
         },
       },
     });
-    groups.push(group);
+
+    // Zapisujemy dodatkowo identyfikatory członków danej grupy
+    groupsData.push({
+      group,
+      members: randomMembers.map((user) => user.id),
+    });
 
     // Tworzymy subskrypcję dla grupy
     const randomPlan = subscriptionPlans[getRandomInt(0, subscriptionPlans.length - 1)];
@@ -352,8 +361,39 @@ async function main() {
       });
     }
   }
-  console.log("✅ Groups & related data seeded!");
+  console.log("✅ Groups & related data & join requests seeded!");
 
+  // ============================================
+  // Seed Group Join Requests
+  // ============================================
+  // Dla każdej grupy wybieramy losowo użytkowników, którzy nie są jeszcze członkami, i tworzymy zapytanie o dołączenie
+  const joinRequestStatuses: GroupJoinRequestStatus[] = [
+    GroupJoinRequestStatus.PENDING,
+    GroupJoinRequestStatus.ACCEPTED,
+    GroupJoinRequestStatus.DECLINED,
+  ];
+
+  for (const groupData of groupsData) {
+    const candidateUsers = users.filter((u) => !groupData.members.includes(u.id));
+    const joinRequestCount = getRandomInt(0, Math.min(candidateUsers.length, 10)); // losowo do 5 zapytań
+    const selectedCandidates = getRandomSubset(candidateUsers, joinRequestCount);
+    let idx = 0;
+    for (const candidate of selectedCandidates) {
+      const randomGroupMember = groupData.members[getRandomInt(0, groupData.members.length - 1)];
+      const randomStatus = joinRequestStatuses[getRandomInt(0, joinRequestStatuses.length - 1)];
+      idx += 1;
+      await prisma.groupJoinRequest.create({
+        data: {
+          user: { connect: { id: candidate.id } },
+          group: { connect: { id: groupData.group.id } },
+          sender: idx % 2 === 0 ? { connect: { id: randomGroupMember } } : undefined,
+          status: randomStatus,
+        },
+      });
+    }
+  }
+
+  console.log("✅ Join requests seeded!");
   // ============================================
   // Seed Standalone Events (Not associated with any group)
   // ============================================
@@ -423,7 +463,7 @@ async function main() {
               status: status,
             },
           });
-          // Tworzymy rekord znajomości – pamiętaj, że relacja symetryczna (przyjmujemy konwencję: zapisujemy parę tylko raz)
+          // Tworzymy rekord znajomości – zapisujemy parę tylko raz
           const friendship = await prisma.friendship.create({
             data: {
               user1: { connect: { id: currentUser.id } },
@@ -434,11 +474,7 @@ async function main() {
 
           const notification = await prisma.notification.create({
             data: {
-              recipient: {
-                connect: {
-                  id: currentUser.id,
-                },
-              },
+              recipient: { connect: { id: currentUser.id } },
               type: NotificationType.FRIEND_ACCEPTED,
               data: friendship,
             },
@@ -457,11 +493,7 @@ async function main() {
           if (status === "PENDING") {
             await prisma.notification.create({
               data: {
-                recipient: {
-                  connect: {
-                    id: friend.id,
-                  },
-                },
+                recipient: { connect: { id: friend.id } },
                 type: NotificationType.FRIEND_REQUEST,
                 data: fr,
               },
@@ -476,6 +508,7 @@ async function main() {
   console.log("✅ Friend relationships seeded!");
 
   console.log("🎉 Database seeding completed!");
+  console.timeEnd("executionTime"); // wypisze czas wykonania w konsoli
 }
 
 main()

@@ -26,6 +26,10 @@ type GroupDetails implements GroupBase {
   smallPhoto: String!
   mediumPhoto: String!
   largePhoto: String!
+  status: GroupStatus!
+  isPrivate: Boolean!
+  isHidden: Boolean!
+  membersApprover: GroupMemberApprover!
   cities: [City!]!
   categories: [Category!]!
   usersData: UsersData!

@@ -6,6 +6,7 @@ import {
   QueryGetGroupCommentsArgs,
 } from "../model/model";
 import { env } from "../utils/env";
+import { userWithEnvPhotoPrefix } from "../utils/user";
 
 export default {
   Query: {
@@ -38,12 +39,7 @@ export default {
       return {
         comments: comments.map((comment) => ({
           ...comment,
-          user: {
-            ...comment.user,
-            largePhoto: `${env.PHOTOS_BUCKET_URL}/${comment.user.largePhoto}`,
-            mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${comment.user.mediumPhoto}`,
-            smallPhoto: `${env.PHOTOS_BUCKET_URL}/${comment.user.smallPhoto}`,
-          },
+          user: userWithEnvPhotoPrefix(comment.user),
         })),
         count: count,
       };

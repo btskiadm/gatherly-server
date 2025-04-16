@@ -2,6 +2,7 @@ import GraphQLJSON from "graphql-type-json";
 import { MercuriusContext, withFilter } from "mercurius";
 import { AuthError } from "../errors/auth.error";
 import {
+  MutationDeleteNotificationArgs,
   MutationMarkAsReadArgs,
   Notification,
   NotificationsResponse,
@@ -100,6 +101,25 @@ export default {
       });
 
       return update;
+    },
+    deleteNotification: async (
+      _: any,
+      { id }: MutationDeleteNotificationArgs,
+      { user, prisma }: MercuriusContext
+    ): Promise<Notification> => {
+      const userId = user?.id;
+      if (!userId) {
+        throw new AuthError();
+      }
+
+      return await prisma.notification.delete({
+        where: {
+          recipient: {
+            id: userId,
+          },
+          id,
+        },
+      });
     },
   },
 

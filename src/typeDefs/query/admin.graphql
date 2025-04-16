@@ -1,21 +1,4 @@
-type GroupWithStatus implements GroupBase {
-  id: String!
-  title: String!
-  description: String!
-  createdAt: Date!
-  updatedAt: Date!
-  smallPhoto: String!
-  mediumPhoto: String!
-  largePhoto: String!
-
-  cities: [City!]!
-  categories: [Category!]!
-  eventsCount: Int!
-  usersCount: Int!
-  status: GroupStatus!
-}
-
 type Query {
   users: [User!]!
-  groups: [GroupWithStatus!]!
+  groups: [GroupTile!]!
 }

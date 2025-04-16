@@ -7,4 +7,5 @@ interface UserBase {
   status: AccountStatus!
   smallPhoto: String!
   mediumPhoto: String!
+  largePhoto: String!
 }

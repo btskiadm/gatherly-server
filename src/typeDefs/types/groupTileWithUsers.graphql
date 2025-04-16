@@ -1,4 +1,4 @@
-type GroupTile implements GroupBase {
+type GroupTileWithUsers implements GroupBase {
   id: String!
   title: String!
   description: String!
@@ -12,6 +12,7 @@ type GroupTile implements GroupBase {
 
   cities: [City!]!
   categories: [Category!]!
+  users: [User!]!
   eventsCount: Int!
   usersCount: Int!
 }

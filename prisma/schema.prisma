@@ -11,6 +11,12 @@ datasource db {
 // ENUMS
 // =====================
 
+enum GroupMemberApprover {
+  MODERATOR
+  MEMBER
+  NOT_REQUIRED
+}
+
 enum AppRole {
   USER
   MODERATOR
@@ -56,12 +62,17 @@ enum FriendRequestStatus {
   DECLINED
 }
 
-// Enum for notification types
 enum NotificationType {
-  FRIEND_REQUEST // Friend request
-  FRIEND_ACCEPTED // Friend request accepted
-  GROUP_INVITE // Group invitation
-  EVENT_INVITE // Event invitation
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  GROUP_INVITE
+  EVENT_INVITE
+}
+
+enum GroupJoinRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
 }
 
 // =====================
@@ -85,16 +96,13 @@ model User {
   events     EventUser[]
   hostEvents Event[]
 
-  // Relations for friend requests
-  sentFriendRequests     FriendRequest[] @relation("sentFriendRequests")
-  receivedFriendRequests FriendRequest[] @relation("receivedFriendRequests")
-
-  // Relations for established friendships
-  friendshipUser1 Friendship[] @relation("friendshipUser1")
-  friendshipUser2 Friendship[] @relation("friendshipUser2")
-
-  // Relation to notifications
-  notifications Notification[]
+  sentFriendRequests     FriendRequest[]    @relation("sentFriendRequests")
+  receivedFriendRequests FriendRequest[]    @relation("receivedFriendRequests")
+  friendshipUser1        Friendship[]       @relation("friendshipUser1")
+  friendshipUser2        Friendship[]       @relation("friendshipUser2")
+  notifications          Notification[]
+  groupJoinRequests      GroupJoinRequest[] // relacja, gdzie użytkownik jest "user" w GroupJoinRequest
+  groupJoinRequestsSent  GroupJoinRequest[] @relation("GroupJoinRequestSender") // dodatkowa relacja, gdzie użytkownik pełni rolę "sender"
 }
 
 model UserProfile {
@@ -120,7 +128,11 @@ model Group {
   title       String
   description String
 
-  status      GroupStatus @default(PENDING_VERIFICATION)
+  status          GroupStatus         @default(PENDING_VERIFICATION)
+  isPrivate       Boolean             @default(true)
+  isHidden        Boolean             @default(true)
+  membersApprover GroupMemberApprover @default(MODERATOR)
+
   smallPhoto  String
   mediumPhoto String
   largePhoto  String
@@ -131,6 +143,7 @@ model Group {
   comments     Comment[]
   events       Event[]
   subscription GroupSubscription?
+  joinRequests GroupJoinRequest[]
 }
 
 model Event {
@@ -148,11 +161,9 @@ model Event {
 
   eventType EventType @default(GROUP)
 
-  // Optional relation to group (for group events)
   group   Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId String?
 
-  // Relation to the host for standalone events
   host   User?   @relation(fields: [hostId], references: [id])
   hostId String?
 
@@ -167,11 +178,9 @@ model Comment {
   content   String
   createdAt DateTime @default(now())
 
-  // Relation to the user who made the comment
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  // Relation to the group on which the comment is made
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId String
 }
@@ -198,11 +207,9 @@ model GroupUser {
   id   String @id @default(uuid())
   role Role   @default(MEMBER)
 
-  // Relation to the user who is part of the group
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  // Relation to the group
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId String
 
@@ -213,11 +220,9 @@ model EventUser {
   id   String @id @default(uuid())
   role Role   @default(MEMBER)
 
-  // Relation to the user attending the event
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  // Relation to the event
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId String
 }
@@ -279,16 +284,10 @@ model GroupSubscription {
   groupId   String               @unique
 }
 
-// =====================
-// MODELS FOR FRIENDSHIPS
-// =====================
-
 model FriendRequest {
   id         String              @id @default(uuid())
-  // Relation to the sender of the friend request
   sender     User                @relation("sentFriendRequests", fields: [senderId], references: [id], onDelete: Cascade)
   senderId   String
-  // Relation to the receiver of the friend request
   receiver   User                @relation("receivedFriendRequests", fields: [receiverId], references: [id], onDelete: Cascade)
   receiverId String
   status     FriendRequestStatus @default(PENDING)
@@ -300,7 +299,6 @@ model FriendRequest {
 
 model Friendship {
   id        String   @id @default(uuid())
-  // Always store the smaller (alphabetically) identifier as user1Id
   user1     User     @relation("friendshipUser1", fields: [user1Id], references: [id], onDelete: Cascade)
   user1Id   String
   user2     User     @relation("friendshipUser2", fields: [user2Id], references: [id], onDelete: Cascade)
@@ -310,17 +308,31 @@ model Friendship {
   @@unique([user1Id, user2Id])
 }
 
-// =====================
-// NOTIFICATION MODEL
-// =====================
-
 model Notification {
   id          String           @id @default(uuid())
   type        NotificationType
-  // Relation to the recipient user of this notification
   recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   recipientId String
-  data        Json? // Additional data specific to the notification (e.g., related friend request, group, or event ID)
+  data        Json?
   read        Boolean          @default(false)
   createdAt   DateTime         @default(now())
+}
+
+// =====================
+// GROUP JOIN REQUEST
+// =====================
+
+model GroupJoinRequest {
+  id        String                 @id @default(uuid())
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  sender    User?                  @relation("GroupJoinRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId  String?
+  group     Group                  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  status    GroupJoinRequestStatus @default(PENDING)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  @@unique([userId, groupId])
 }

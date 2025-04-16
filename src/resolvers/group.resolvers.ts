@@ -6,19 +6,28 @@ import {
   EventTile,
   GroupDetails,
   GroupedEvents,
+  GroupStatus,
+  GroupTileWithUsers,
   Mutation,
+  MutationAcceptJoinRequestGroupArgs,
+  MutationAcceptSentGroupInvitationArgs,
+  MutationCancelJoinGroupArgs,
+  MutationCancelJoinRequestGroupArgs,
+  MutationCancelSentGroupInvitationArgs,
   MutationCreateGroupArgs,
-  MutationInviteUsersToGroupArgs,
   MutationJoinGroupArgs,
   MutationLeaveGroupArgs,
+  MutationSendGroupInvitationArgs,
   Query,
   QueryCheckUserGroupPermissionsArgs,
+  QueryGetGroupJoinRequestsArgs,
   QueryGetGroupTilesArgs,
   QueryGetGroupTilesByUserIdArgs,
   QueryGetGroupTitlesArgs,
 } from "../model/model";
 import { getPhotoUrl } from "../utils/photoUrl";
-import { env } from "../utils/env";
+import { userWithEnvPhotoPrefix } from "../utils/user";
+import { AuthError } from "../errors/auth.error";
 
 // Typy dla sortowania.
 type NumberOfMembers = "ascending" | "descending";
@@ -34,6 +43,8 @@ interface RawGroupRow {
   smallPhoto: string;
   mediumPhoto: string;
   largePhoto: string;
+  isPrivate: boolean;
+  status: GroupStatus;
   usersCount: number;
   eventsCount: number;
   categories: Category[];
@@ -100,11 +111,10 @@ export default {
   Query: {
     getGroupTilesByUserId: async (
       _: unknown,
-      { userId, skip: _skip, take: _take }: QueryGetGroupTilesByUserIdArgs,
-      { prisma }: MercuriusContext
+      { userId: _userId, skip, take }: QueryGetGroupTilesByUserIdArgs,
+      { prisma, user }: MercuriusContext
     ): Promise<Query["getGroupTilesByUserId"]> => {
-      const skip = _skip || 0;
-      const take = _take || 10;
+      const userId = user?.id ?? _userId ?? "";
 
       const [userGroups, count] = await Promise.all([
         prisma.groupUser.findMany({
@@ -117,13 +127,15 @@ export default {
                 categories: { include: { category: true } },
                 cities: { include: { city: true } },
                 users: {
-                  select: {
-                    id: true,
+                  include: {
+                    user: true,
                   },
+                  take: 5,
                 },
-                events: {
+                _count: {
                   select: {
-                    id: true,
+                    users: true,
+                    events: true,
                   },
                 },
               },
@@ -144,21 +156,26 @@ export default {
         }),
       ]);
 
-      const groups = userGroups.map(({ group }) => ({
+      const groups: GroupTileWithUsers[] = userGroups.map(({ group }) => ({
         id: group.id,
         title: group.title,
         description: group.description,
         createdAt: group.createdAt,
         updatedAt: group.updatedAt,
+        isPrivate: group.isPrivate,
 
         categories: group.categories.map((c) => c.category),
         cities: group.cities.map((c) => c.city),
+
         largePhoto: getPhotoUrl(group.largePhoto),
         mediumPhoto: getPhotoUrl(group.mediumPhoto),
         smallPhoto: getPhotoUrl(group.smallPhoto),
 
-        eventsCount: group.events.length,
-        usersCount: group.users.length,
+        status: group.status,
+        users: group.users.map((groupUser) => userWithEnvPhotoPrefix(groupUser.user)),
+
+        eventsCount: group._count.events,
+        usersCount: group._count.users,
       }));
 
       return {
@@ -249,6 +266,8 @@ export default {
           g."smallPhoto",
           g."mediumPhoto",
           g."largePhoto",
+          g."status",
+          g."isPrivate",
           COUNT(DISTINCT gu."id")::int AS "usersCount",
           COUNT(DISTINCT ev."id")::int AS "eventsCount",
           COALESCE(
@@ -294,7 +313,7 @@ export default {
         description: group.description,
         createdAt: group.createdAt,
         updatedAt: group.updatedAt,
-
+        status: group.status,
         cities: group.cities,
         categories: group.categories,
         eventsCount: group.eventsCount,
@@ -302,6 +321,7 @@ export default {
         largePhoto: getPhotoUrl(group.largePhoto),
         mediumPhoto: getPhotoUrl(group.mediumPhoto),
         smallPhoto: getPhotoUrl(group.smallPhoto),
+        isPrivate: group.isPrivate,
       }));
     },
 
@@ -481,26 +501,10 @@ export default {
         usersData: {
           count: group._count.users,
         },
-        // users: group.users.map(({ id, role, user }) => ({
-        //   id,
-        //   role,
-        //   user,
-        // })),
-        // usersData: {
-        //   users: group.users.map(({ id, role, user }) => ({
-        //     id,
-        //     role,
-        //     user: {
-        //       ...user,
-        //       largePhoto: `${env.PHOTOS_BUCKET_URL}/${user.largePhoto}`,
-        //       mediumPhoto: `${env.PHOTOS_BUCKET_URL}/${user.mediumPhoto}`,
-        //       smallPhoto: `${env.PHOTOS_BUCKET_URL}/${user.smallPhoto}`,
-        //       eventsCount: user._count.events + user._count.hostEvents,
-        //       groupsCount: user._count.groups,
-        //       friendsCount: user._count.friendshipUser1 + user._count.friendshipUser2,
-        //     }
-        //   })),
-        // },
+        status: group.status,
+        isPrivate: group.isPrivate,
+        isHidden: group.isHidden,
+        membersApprover: group.membersApprover,
         commentsData: {
           rate: roundToQuarter(rate._avg.rate ?? 0),
         },
@@ -518,6 +522,69 @@ export default {
         mediumPhoto: getPhotoUrl(group.mediumPhoto),
         smallPhoto: getPhotoUrl(group.smallPhoto),
       };
+    },
+    getGroupJoinRequests: async (
+      _: unknown,
+      { groupId, status = [] }: QueryGetGroupJoinRequestsArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Query["getGroupJoinRequests"]> => {
+      const where: Prisma.GroupJoinRequestWhereInput = {
+        groupId: groupId,
+        sender: null,
+      };
+
+      if (status && status?.length > 0) {
+        where.status = {
+          in: status,
+        };
+      }
+
+      const requests = await prisma.groupJoinRequest.findMany({
+        where: where,
+        include: {
+          user: true,
+          sender: true,
+        },
+      });
+
+      return requests.map((request) => ({
+        ...request,
+        user: userWithEnvPhotoPrefix(request.user),
+        sender: request.sender ? userWithEnvPhotoPrefix(request.sender) : null,
+      }));
+    },
+
+    getGroupJoinInvitationRequests: async (
+      _: unknown,
+      { groupId, status = [] }: QueryGetGroupJoinRequestsArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Query["getGroupJoinRequests"]> => {
+      const where: Prisma.GroupJoinRequestWhereInput = {
+        groupId: groupId,
+        sender: {
+          isNot: null, // Tylko rekordy, które mają przypisanego sendera
+        },
+      };
+
+      if (status && status?.length > 0) {
+        where.status = {
+          in: status,
+        };
+      }
+
+      const requests = await prisma.groupJoinRequest.findMany({
+        where: where,
+        include: {
+          user: true,
+          sender: true,
+        },
+      });
+
+      return requests.map((request) => ({
+        ...request,
+        user: userWithEnvPhotoPrefix(request.user),
+        sender: request.sender ? userWithEnvPhotoPrefix(request.sender) : null,
+      }));
     },
   },
 
@@ -537,6 +604,8 @@ export default {
             smallPhoto: "128x128",
             mediumPhoto: "256x256",
             largePhoto: "512x512",
+            isHidden: true, //todo
+            isPrivate: true, //todo
             categories: {
               create: categories.map((catValue) => ({
                 category: { connect: { value: catValue } },
@@ -572,19 +641,90 @@ export default {
       { groupId }: MutationJoinGroupArgs,
       { prisma, user }: MercuriusContext
     ): Promise<Mutation["joinGroup"]> => {
-      try {
-        await prisma.groupUser.create({
+      const userId = user?.id;
+
+      if (!userId) {
+        throw new AuthError();
+      }
+
+      const group = await prisma.group.findFirst({
+        where: {
+          id: groupId,
+        },
+        select: {
+          isPrivate: true,
+          users: {
+            where: {
+              userId: userId,
+            },
+          },
+          joinRequests: {
+            where: {
+              userId: userId,
+            },
+          },
+        },
+      });
+
+      if (!group) {
+        throw new Error(`group:${groupId} does not exist`);
+      }
+
+      if (group.users.some((u) => u.id === userId)) {
+        throw new Error(`user:${userId} already exist in group:${groupId}`);
+      }
+      // todo: sprawdzać kto moze zaakceptowac dla grupy publicznej i prywatnej, rozwarzyc admin only, members, nie wymagane
+      if (group?.isPrivate) {
+        if (group.joinRequests.some((u) => u.id === userId)) {
+          throw new Error(`user:${userId} has already sent join request`);
+        }
+
+        await prisma.groupJoinRequest.create({
           data: {
-            user: { connect: { id: user!.id } },
+            user: { connect: { id: userId } },
             group: { connect: { id: groupId } },
           },
         });
-
-        return { success: true };
-      } catch (error) {
-        console.error("Error joining group:", error);
-        return { success: false };
+      } else {
+        prisma.$transaction(
+          async (tx) => {
+            await tx.groupUser.create({
+              data: {
+                user: { connect: { id: userId } },
+                group: { connect: { id: groupId } },
+              },
+            });
+          },
+          {
+            maxWait: 10_000,
+            timeout: 20_000,
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          }
+        );
       }
+
+      return true;
+    },
+
+    cancelJoinGroup: async (
+      _: unknown,
+      { groupId }: MutationCancelJoinGroupArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["cancelJoinGroup"]> => {
+      const userId = user?.id;
+
+      if (!userId) {
+        throw new AuthError();
+      }
+
+      await prisma.groupJoinRequest.create({
+        data: {
+          user: { connect: { id: userId } },
+          group: { connect: { id: groupId } },
+        },
+      });
+
+      return true;
     },
 
     leaveGroup: async (
@@ -592,21 +732,150 @@ export default {
       { groupId }: MutationLeaveGroupArgs,
       { prisma, user }: MercuriusContext
     ): Promise<Mutation["leaveGroup"]> => {
-      try {
-        await prisma.groupUser.delete({
-          where: {
-            userId_groupId: {
-              userId: user!.id,
-              groupId: groupId,
-            },
+      await prisma.groupUser.delete({
+        where: {
+          userId_groupId: {
+            userId: user!.id,
+            groupId: groupId,
           },
-        });
+        },
+      });
 
-        return { success: true };
-      } catch (error) {
-        console.error("Error leaving group:", error);
-        return { success: false };
+      return true;
+    },
+
+    sendGroupInvitation: async (
+      _: unknown,
+      { groupId, userId }: MutationSendGroupInvitationArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["acceptJoinRequestGroup"]> => {
+      if (!user?.id) {
+        throw new AuthError();
       }
+
+      const senderGroupUser = await prisma.groupUser.findFirst({
+        where: {
+          groupId: groupId,
+          userId: user?.id,
+        },
+      });
+
+      if (!senderGroupUser) {
+        throw new AuthError(`user:${user?.id} is not member of group:${groupId}`);
+      }
+
+      // todo: sprawdzać kto moze zaakceptowac dla grupy publicznej i prywatnej, rozwarzyc admin only, members, nie wymagane
+      const receiverGroupUser = await prisma.groupUser.findFirst({
+        where: {
+          groupId: groupId,
+          userId: userId,
+        },
+      });
+
+      if (receiverGroupUser) {
+        throw new AuthError(`user:${userId} is group:${groupId} member`);
+      }
+
+      await prisma.groupJoinRequest.create({
+        data: {
+          user: { connect: { id: userId } },
+          group: { connect: { id: groupId } },
+          sender: { connect: { id: user.id } },
+        },
+      });
+
+      return true;
+    },
+
+    acceptSentGroupInvitation: async (
+      _: unknown,
+      { groupId }: MutationAcceptSentGroupInvitationArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["acceptSentGroupInvitation"]> => {
+      const userId = user?.id;
+
+      if (!userId) {
+        throw new AuthError();
+      }
+
+      await prisma.groupJoinRequest.deleteMany({
+        where: {
+          groupId: groupId,
+          userId: userId,
+        },
+      });
+
+      await prisma.groupUser.create({
+        data: {
+          user: { connect: { id: userId } },
+          group: { connect: { id: groupId } },
+        },
+      });
+
+      return true;
+    },
+
+    cancelSentGroupInvitation: async (
+      _: unknown,
+      { groupId }: MutationCancelSentGroupInvitationArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["cancelSentGroupInvitation"]> => {
+      const userId = user?.id;
+
+      if (!userId) {
+        throw new AuthError();
+      }
+
+      await prisma.groupJoinRequest.deleteMany({
+        where: {
+          groupId,
+          userId,
+        },
+      });
+
+      return true;
+    },
+
+    acceptJoinRequestGroup: async (
+      _: unknown,
+      { groupId, userId }: MutationAcceptJoinRequestGroupArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["acceptJoinRequestGroup"]> => {
+      // todo: sprawdzać kto moze zaakceptowac dla grupy publicznej i prywatnej, rozwarzyc admin only, members, nie wymagane
+
+      // delete or request for specific user in specific group
+      await prisma.groupJoinRequest.deleteMany({
+        where: {
+          groupId,
+          userId,
+        },
+      });
+
+      // it will throw error if user is already in group
+      await prisma.groupUser.create({
+        data: {
+          user: { connect: { id: userId } },
+          group: { connect: { id: groupId } },
+        },
+      });
+
+      return true;
+    },
+
+    cancelJoinRequestGroup: async (
+      _: unknown,
+      { groupId, userId }: MutationAcceptJoinRequestGroupArgs,
+      { prisma, user }: MercuriusContext
+    ): Promise<Mutation["cancelJoinRequestGroup"]> => {
+      // delete or request for specific user in specific group
+      await prisma.groupJoinRequest.deleteMany({
+        where: {
+          groupId,
+          userId,
+        },
+      });
+
+      return true;
     },
   },
 };

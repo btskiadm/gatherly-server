@@ -8,6 +8,7 @@ import {
 import { userValidator } from "../prisma/validators/user.validators";
 import { count } from "console";
 import { env } from "../utils/env";
+import { userWithEnvPhotoPrefix } from "../utils/user";
 
 export default {
   Query: {
@@ -19,13 +20,14 @@ export default {
       { username }: QueryGetUsersByUsernameArgs,
       { prisma }: MercuriusContext
     ): Promise<Query["getUsersByUsername"]> => {
-      return await prisma.user.findMany({
+      const users = await prisma.user.findMany({
         where: {
           username: {
             contains: username,
           },
         },
       });
+      return users.map(userWithEnvPhotoPrefix);
     },
     getUserWithProfile: async (
       _: unknown,

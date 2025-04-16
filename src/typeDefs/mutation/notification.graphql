@@ -1,3 +1,4 @@
 type Mutation {
-  markAsRead(id: ID!): Notification!
+  markAsRead(id: String!): Notification!
+  deleteNotification(id: String!): Notification!
 }

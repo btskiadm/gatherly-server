@@ -95,10 +95,6 @@ type CreateGroupReponse {
 
 scalar Date
 
-type DeleteGroupResponse {
-  success: Boolean!
-}
-
 type Event {
   canceled: Boolean!
   categories: [Category!]!
@@ -201,7 +197,7 @@ type GetGroupCommentsResponse {
 
 type GetGroupsByUserIdReponse {
   count: Int!
-  groups: [GroupTile!]!
+  groups: [GroupTileWithUsers!]!
 }
 
 type GetReceivedFriendRequestsResponse {
@@ -223,9 +219,11 @@ interface GroupBase {
   createdAt: Date!
   description: String!
   id: String!
+  isPrivate: Boolean!
   largePhoto: String!
   mediumPhoto: String!
   smallPhoto: String!
+  status: GroupStatus!
   title: String!
   updatedAt: Date!
 }
@@ -241,18 +239,43 @@ type GroupDetails implements GroupBase {
   events: [EventTile!]!
   eventsLength: Int!
   id: String!
+  isHidden: Boolean!
+  isPrivate: Boolean!
   largePhoto: String!
   mediumPhoto: String!
+  membersApprover: GroupMemberApprover!
   past: [GroupedEvents!]!
   pastLength: Int!
   pending: [GroupedEvents!]!
   pendingLength: Int
   smallPhoto: String!
+  status: GroupStatus!
   title: String!
   upcoming: [GroupedEvents!]!
   upcomingLength: Int!
   updatedAt: Date!
   usersData: UsersData!
+}
+
+type GroupJoinRequest {
+  createdAt: Date!
+  id: String!
+  sender: User
+  status: GroupJoinRequestStatus!
+  updatedAt: Date!
+  user: User!
+}
+
+enum GroupJoinRequestStatus {
+  ACCEPTED
+  DECLINED
+  PENDING
+}
+
+enum GroupMemberApprover {
+  MEMBER
+  MODERATOR
+  NOT_REQUIRED
 }
 
 enum GroupStatus {
@@ -270,27 +293,7 @@ type GroupTile implements GroupBase {
   description: String!
   eventsCount: Int!
   id: String!
-  largePhoto: String!
-  mediumPhoto: String!
-  smallPhoto: String!
-  title: String!
-  updatedAt: Date!
-  usersCount: Int!
-}
-
-type GroupUser {
-  id: String!
-  role: Role!
-  user: User!
-}
-
-type GroupWithStatus implements GroupBase {
-  categories: [Category!]!
-  cities: [City!]!
-  createdAt: Date!
-  description: String!
-  eventsCount: Int!
-  id: String!
+  isPrivate: Boolean!
   largePhoto: String!
   mediumPhoto: String!
   smallPhoto: String!
@@ -298,6 +301,30 @@ type GroupWithStatus implements GroupBase {
   title: String!
   updatedAt: Date!
   usersCount: Int!
+}
+
+type GroupTileWithUsers implements GroupBase {
+  categories: [Category!]!
+  cities: [City!]!
+  createdAt: Date!
+  description: String!
+  eventsCount: Int!
+  id: String!
+  isPrivate: Boolean!
+  largePhoto: String!
+  mediumPhoto: String!
+  smallPhoto: String!
+  status: GroupStatus!
+  title: String!
+  updatedAt: Date!
+  users: [User!]!
+  usersCount: Int!
+}
+
+type GroupUser {
+  id: String!
+  role: Role!
+  user: User!
 }
 
 type GroupedEvents {
@@ -310,14 +337,6 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar JSON
 
-type JoinGroupReponse {
-  success: Boolean!
-}
-
-type LeaveGroupReponse {
-  success: Boolean!
-}
-
 type LoginResponse {
   accessToken: String!
   user: User!
@@ -329,19 +348,26 @@ type LogoutResponse {
 
 type Mutation {
   acceptFriendRequest(requestId: String!): Friendship!
+  acceptJoinRequestGroup(groupId: String!, userId: String!): Boolean!
+  acceptSentGroupInvitation(groupId: String!): Boolean!
   addGroupComment(addGroupCommentInput: AddGroupCommentInput!, groupId: String!): AddGroupCommentResponse!
   cancelFriendRequest(requestId: String!): FriendRequest!
   cancelFriendship(friendshipId: String!): Friendship!
+  cancelJoinGroup(groupId: String!): Boolean!
+  cancelJoinRequestGroup(groupId: String!, userId: String!): Boolean!
+  cancelSentGroupInvitation(groupId: String!): Boolean!
   createEvent(createEventInput: CreateEventInput!, groupId: String!): CreateEventReponse!
   createGroup(createGroupInput: CreateGroupInput!): CreateGroupReponse!
   declineFriendRequest(requestId: String!): FriendRequest!
-  joinGroup(groupId: String!): JoinGroupReponse!
-  leaveGroup(groupId: String!): LeaveGroupReponse!
+  deleteNotification(id: String!): Notification!
+  joinGroup(groupId: String!): Boolean!
+  leaveGroup(groupId: String!): Boolean!
   login(password: String!, username: String!): LoginResponse
   logout: LogoutResponse
-  markAsRead(id: ID!): Notification!
+  markAsRead(id: String!): Notification!
   refreshToken: RefreshTokenResponse
-  sendFriendRequest(receiverId: String!): FriendRequest!
+  sendFriendRequest(receiverIds: [String!]!): [FriendRequest!]!
+  sendGroupInvitation(groupId: String!, userId: String!): Boolean!
 }
 
 type Notification {
@@ -386,8 +412,10 @@ type Query {
   getFriendsList(skip: Int!, take: Int!, userId: String): GetFriendsListResponse!
   getGroupComments(groupId: String!, skip: Int, take: Int): GetGroupCommentsResponse!
   getGroupDetails(groupId: String!): GroupDetails
+  getGroupJoinInvitationRequests(groupId: String!, status: [GroupJoinRequestStatus!]): [GroupJoinRequest!]!
+  getGroupJoinRequests(groupId: String!, status: [GroupJoinRequestStatus!]): [GroupJoinRequest!]!
   getGroupTiles(categories: [String!]!, cities: [String!]!, dateOfAdding: String!, maxMembers: Int!, minMembers: Int!, numberOfMembers: String!, titles: [String!]!): [GroupTile!]!
-  getGroupTilesByUserId(skip: Int, take: Int, userId: String!): GetGroupsByUserIdReponse!
+  getGroupTilesByUserId(skip: Int!, take: Int!, userId: String): GetGroupsByUserIdReponse!
   getGroupTitles(title: String!): [Title!]!
   getReceivedFriendRequests(skip: Int!, take: Int!): GetReceivedFriendRequestsResponse!
   getSentFriendRequests(skip: Int!, take: Int!): GetSentFriendRequestsReponse!
@@ -397,7 +425,7 @@ type Query {
   getUserWithProfile(userId: String!): UserWithProfile
   getUsers: [User!]!
   getUsersByUsername(username: String!): [User!]!
-  groups: [GroupWithStatus!]!
+  groups: [GroupTile!]!
   me: User
   notifications(skip: Int!, take: Int!): NotificationsResponse!
   users: [User!]!
@@ -440,6 +468,7 @@ interface UserBase {
   createdAt: Date!
   email: String!
   id: String!
+  largePhoto: String!
   mediumPhoto: String!
   role: AppRole!
   smallPhoto: String!

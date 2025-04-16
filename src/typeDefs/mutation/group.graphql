@@ -10,21 +10,15 @@ type CreateGroupReponse {
   groupId: String
 }
 
-type DeleteGroupResponse {
-  success: Boolean!
-}
-
-type JoinGroupReponse {
-  success: Boolean!
-}
-
-type LeaveGroupReponse {
-  success: Boolean!
-}
-
 type Mutation {
   createGroup(createGroupInput: CreateGroupInput!): CreateGroupReponse!
   # deleteGroup(groupId: String!): DeleteGroupResponse!
-  joinGroup(groupId: String!): JoinGroupReponse!
-  leaveGroup(groupId: String!): LeaveGroupReponse!
+  joinGroup(groupId: String!): Boolean!
+  cancelJoinGroup(groupId: String!): Boolean!
+  leaveGroup(groupId: String!): Boolean!
+  sendGroupInvitation(groupId: String!, userId: String!): Boolean!
+  acceptSentGroupInvitation(groupId: String!): Boolean!
+  cancelSentGroupInvitation(groupId: String!): Boolean!
+  acceptJoinRequestGroup(groupId: String!, userId: String!): Boolean!
+  cancelJoinRequestGroup(groupId: String!, userId: String!): Boolean!
 }
